@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { apiClient, clearAuthStorage } from "@/lib/api-client";
 import { jwtDecode } from "jwt-decode";
 import type { DecodedToken } from "@/providers/authProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Membership {
   branch_id: number | null;
@@ -23,11 +24,11 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  admin: { bg: "bg-rose-500/10", border: "border-rose-500/40 hover:border-rose-500", text: "text-rose-400", icon: "bg-rose-500/20" },
-  manager: { bg: "bg-violet-500/10", border: "border-violet-500/40 hover:border-violet-500", text: "text-violet-400", icon: "bg-violet-500/20" },
-  cashier: { bg: "bg-cyan-500/10", border: "border-cyan-500/40 hover:border-cyan-500", text: "text-cyan-400", icon: "bg-cyan-500/20" },
-  waiter: { bg: "bg-emerald-500/10", border: "border-emerald-500/40 hover:border-emerald-500", text: "text-emerald-400", icon: "bg-emerald-500/20" },
-  kitchen: { bg: "bg-amber-500/10", border: "border-amber-500/40 hover:border-amber-500", text: "text-amber-400", icon: "bg-amber-500/20" },
+  admin: { bg: "bg-rose-500/10", border: "border-rose-500/40 hover:border-rose-500", text: "text-rose-500 dark:text-rose-400", icon: "bg-rose-500/20" },
+  manager: { bg: "bg-violet-500/10", border: "border-violet-500/40 hover:border-violet-500", text: "text-violet-500 dark:text-violet-400", icon: "bg-violet-500/20" },
+  cashier: { bg: "bg-cyan-500/10", border: "border-cyan-500/40 hover:border-cyan-500", text: "text-cyan-600 dark:text-cyan-400", icon: "bg-cyan-500/20" },
+  waiter: { bg: "bg-emerald-500/10", border: "border-emerald-500/40 hover:border-emerald-500", text: "text-emerald-600 dark:text-emerald-400", icon: "bg-emerald-500/20" },
+  kitchen: { bg: "bg-amber-500/10", border: "border-amber-500/40 hover:border-amber-500", text: "text-amber-600 dark:text-amber-400", icon: "bg-amber-500/20" },
 };
 
 export default function SelectBranchPage() {
@@ -42,7 +43,6 @@ export default function SelectBranchPage() {
     const token = localStorage.getItem("pending_token");
     const raw = localStorage.getItem("pending_memberships");
     if (!token || !raw) {
-      // No pending flow — already authenticated or not logged in
       const hasToken = localStorage.getItem("token");
       router.replace(hasToken ? "/" : "/login");
       return;
@@ -73,7 +73,7 @@ export default function SelectBranchPage() {
       localStorage.setItem("user_role", decoded.role);
       if (decoded.branch_id != null) localStorage.setItem("branch_id", decoded.branch_id.toString());
 
-      router.replace("/");
+      window.location.replace("/");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Error al seleccionar la sucursal");
       setLoading(null);
@@ -89,17 +89,22 @@ export default function SelectBranchPage() {
 
   if (!pendingToken) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+      <div className="min-h-screen bg-stone-100 dark:bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-stone-100 dark:bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-500/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px] animate-pulse" />
+
+      {/* Theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -107,14 +112,14 @@ export default function SelectBranchPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-lg z-10"
       >
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-200 dark:border-slate-800 rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20">
-              <Store className="w-10 h-10 text-slate-950" />
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+              <Store className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Seleccionar Sucursal</h1>
-            <p className="text-slate-400 text-sm mt-2 text-center">
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-white">Seleccionar Sucursal</h1>
+            <p className="text-stone-500 dark:text-slate-400 text-sm mt-2 text-center">
               Tu cuenta tiene acceso a múltiples sucursales. ¿Con cuál deseas ingresar?
             </p>
           </div>
@@ -143,7 +148,7 @@ export default function SelectBranchPage() {
                       )}
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-semibold text-white text-sm">
+                      <p className="font-semibold text-stone-900 dark:text-white text-sm">
                         {m.branch_name || "Acceso Global"}
                       </p>
                       <div className={`flex items-center gap-1 text-xs font-bold uppercase tracking-wider mt-0.5 ${colors.text}`}>
@@ -159,7 +164,7 @@ export default function SelectBranchPage() {
           </div>
 
           {error && (
-            <div className="mb-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl text-sm text-center">
+            <div className="mb-4 bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 px-4 py-3 rounded-xl text-sm text-center">
               {error}
             </div>
           )}
@@ -167,7 +172,7 @@ export default function SelectBranchPage() {
           {/* Cancel */}
           <button
             onClick={handleCancel}
-            className="w-full flex items-center justify-center gap-2 py-3 border border-slate-800 rounded-2xl text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all text-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 border border-stone-200 dark:border-slate-800 rounded-2xl text-stone-500 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800/50 transition-all text-sm"
           >
             <LogOut className="w-4 h-4" />
             Volver al Login

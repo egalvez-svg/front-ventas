@@ -94,7 +94,7 @@ function KitchenContent() {
     [servedOrders]
   );
   const updateStatus = useUpdateOrderStatus();
-  const { data: products } = useProducts({ active_only: true });
+  const { data: products } = useProducts(branchId, { active_only: true });
   const [tick, setTick] = useState(0);
 
   const productMap = useMemo<Record<number, string>>(

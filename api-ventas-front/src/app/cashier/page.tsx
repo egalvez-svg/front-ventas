@@ -56,7 +56,7 @@ function CashierContent() {
     () => [...(servedOrders ?? []), ...(deliveredOrders ?? [])],
     [servedOrders, deliveredOrders]
   );
-  const { data: products } = useProducts({ active_only: true });
+  const { data: products } = useProducts(branchId, { active_only: true });
   const productMap = useMemo<Record<number, string>>(
     () => Object.fromEntries((products ?? []).map((p) => [p.id, p.name])),
     [products]

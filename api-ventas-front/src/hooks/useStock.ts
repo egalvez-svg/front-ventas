@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 export interface StockItem {
   ingredient_id: number;
+  ingredient_name: string;
   name: string;
   unit: string;
   quantity: number;

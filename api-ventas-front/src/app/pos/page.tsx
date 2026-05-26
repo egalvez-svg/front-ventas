@@ -429,9 +429,10 @@ function OrderPanel({
   onSubmit: () => void;
   isSubmitting: boolean;
 }) {
+  const branchId = useBranchId();
   const [categoryId, setCategoryId] = useState<number | null>(null);
-  const { data: categories } = useCategories();
-  const { data: products, isLoading: productsLoading } = useProducts({
+  const { data: categories } = useCategories(branchId);
+  const { data: products, isLoading: productsLoading } = useProducts(branchId, {
     active_only: true,
     category_id: categoryId ?? undefined,
   });
@@ -642,7 +643,8 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 function TableActiveOrders({ orders }: { orders: Order[] }) {
-  const { data: products } = useProducts({ active_only: true });
+  const branchId = useBranchId();
+  const { data: products } = useProducts(branchId, { active_only: true });
   const productMap = useMemo<Record<number, string>>(
     () => Object.fromEntries((products ?? []).map((p) => [p.id, p.name])),
     [products]
@@ -695,7 +697,8 @@ function DeliveryPanel({
   onClose: () => void;
   deliveringId: number | null;
 }) {
-  const { data: products } = useProducts({ active_only: true });
+  const branchId = useBranchId();
+  const { data: products } = useProducts(branchId, { active_only: true });
   const productMap = useMemo<Record<number, string>>(
     () => Object.fromEntries((products ?? []).map((p) => [p.id, p.name])),
     [products]

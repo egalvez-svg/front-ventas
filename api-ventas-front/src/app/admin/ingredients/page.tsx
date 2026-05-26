@@ -1,9 +1,8 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState } from "react";
-import Link from "next/link";
-import { FlaskConical, Plus, Pencil, Trash2, X, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FlaskConical, Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import {
   useIngredients,
   useCreateIngredient,
@@ -14,6 +13,7 @@ import {
   type IngredientPayload,
   type Unit,
 } from "@/hooks/useIngredients";
+import { useBranches } from "@/hooks/useBranches";
 
 type Modal =
   | { mode: "closed" }
@@ -35,8 +35,8 @@ export default function IngredientsPage() {
     <Authenticated
       key="ingredients-page"
       loading={
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-          <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        <div className="min-h-screen bg-stone-100 dark:bg-slate-950 flex items-center justify-center">
+          <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
         </div>
       }
     >
@@ -46,7 +46,16 @@ export default function IngredientsPage() {
 }
 
 function IngredientsContent() {
-  const { data: ingredients, isLoading, isError } = useIngredients();
+  const { data: branches, isLoading: branchesLoading } = useBranches();
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (branches?.length && selectedBranchId === null) {
+      setSelectedBranchId(branches[0].id);
+    }
+  }, [branches, selectedBranchId]);
+
+  const { data: ingredients, isLoading, isError } = useIngredients(selectedBranchId);
   const createIngredient = useCreateIngredient();
   const updateIngredient = useUpdateIngredient();
   const deleteIngredient = useDeleteIngredient();
@@ -58,24 +67,14 @@ function IngredientsContent() {
   const isPending =
     createIngredient.isPending || updateIngredient.isPending || deleteIngredient.isPending;
 
-  const openCreate = () => {
-    setForm(EMPTY);
-    setFormError("");
-    setModal({ mode: "create" });
-  };
-
+  const openCreate = () => { setForm(EMPTY); setFormError(""); setModal({ mode: "create" }); };
   const openEdit = (item: Ingredient) => {
     setForm({ name: item.name, unit: item.unit, cost_per_unit: item.cost_per_unit });
     setFormError("");
     setModal({ mode: "edit", item });
   };
-
   const openDelete = (item: Ingredient) => setModal({ mode: "delete", item });
-
-  const close = () => {
-    if (isPending) return;
-    setModal({ mode: "closed" });
-  };
+  const close = () => { if (isPending) return; setModal({ mode: "closed" }); };
 
   const handleApiError = (err: any) => {
     const detail = err.response?.data?.detail;
@@ -88,101 +87,100 @@ function IngredientsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedBranchId === null) return;
     setFormError("");
     if (modal.mode === "create") {
-      createIngredient.mutate(form, {
-        onSuccess: close,
-        onError: handleApiError,
-      });
+      createIngredient.mutate({ branchId: selectedBranchId, payload: form }, { onSuccess: close, onError: handleApiError });
     } else if (modal.mode === "edit") {
-      updateIngredient.mutate(
-        { id: modal.item.id, payload: form },
-        { onSuccess: close, onError: handleApiError }
-      );
+      updateIngredient.mutate({ branchId: selectedBranchId, id: modal.item.id, payload: form }, { onSuccess: close, onError: handleApiError });
     }
   };
 
   const handleDelete = () => {
-    if (modal.mode !== "delete") return;
-    deleteIngredient.mutate(modal.item.id, { onSuccess: close });
+    if (modal.mode !== "delete" || selectedBranchId === null) return;
+    deleteIngredient.mutate({ branchId: selectedBranchId, id: modal.item.id }, { onSuccess: close });
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-6">
+    <div className="min-h-full text-stone-900 dark:text-slate-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Admin
-          </Link>
-          <div className="w-px h-5 bg-slate-700" />
-          <div className="flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-amber-400" />
-            <h1 className="text-2xl font-bold">Ingredientes</h1>
-          </div>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-slate-800/70 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <FlaskConical className="w-5 h-5 text-amber-500" />
+          <h1 className="text-base font-bold text-stone-900 dark:text-white">Ingredientes</h1>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Ingrediente
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedBranchId || ""}
+            onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+            className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+          >
+            {!branches?.length && branchesLoading ? (
+              <option>Cargando...</option>
+            ) : (
+              branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
+            )}
+          </select>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 text-sm shadow-md shadow-amber-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Ingrediente
+          </button>
+        </div>
       </div>
 
+      <div className="p-6">
       {/* Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
           </div>
         ) : isError ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400 dark:text-slate-500">
             <X className="w-10 h-10 text-rose-500/50" />
             <p>Error al cargar los ingredientes</p>
           </div>
         ) : !ingredients?.length ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400 dark:text-slate-500">
             <FlaskConical className="w-10 h-10 opacity-30" />
             <p>No hay ingredientes registrados</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-stone-200 dark:border-slate-800 text-stone-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                 <th className="text-left px-6 py-4 font-medium">Nombre</th>
                 <th className="text-left px-6 py-4 font-medium">Unidad</th>
                 <th className="text-right px-6 py-4 font-medium">Costo / unidad</th>
                 <th className="px-6 py-4 font-medium w-24" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-stone-100 dark:divide-slate-800/50">
               {ingredients.map((ing) => (
-                <tr key={ing.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4 font-medium text-slate-200">{ing.name}</td>
+                <tr key={ing.id} className="hover:bg-stone-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td className="px-6 py-4 font-medium text-stone-800 dark:text-slate-200">{ing.name}</td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                    <span className="inline-flex px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold">
                       {ing.unit}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                  <td className="px-6 py-4 text-right text-stone-700 dark:text-slate-300 font-mono">
                     ${ing.cost_per_unit.toLocaleString("es-CL")}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openEdit(ing)}
-                        className="p-1.5 text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-stone-400 dark:text-slate-500 hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openDelete(ing)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-stone-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -194,12 +192,13 @@ function IngredientsContent() {
           </table>
         )}
       </div>
+      </div>
 
       {/* Create / Edit Modal */}
       {(modal.mode === "create" || modal.mode === "edit") && (
         <ModalOverlay onClose={close}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white">
               {modal.mode === "create" ? "Nuevo Ingrediente" : "Editar Ingrediente"}
             </h2>
             <CloseBtn onClose={close} disabled={isPending} />
@@ -224,9 +223,7 @@ function IngredientsContent() {
                 className={inputClass}
               >
                 {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {UNIT_LABELS[u]}
-                  </option>
+                  <option key={u} value={u}>{UNIT_LABELS[u]}</option>
                 ))}
               </select>
             </FormField>
@@ -263,18 +260,18 @@ function IngredientsContent() {
         <ModalOverlay onClose={close}>
           <div className="text-center">
             <div className="w-14 h-14 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-7 h-7 text-rose-400" />
+              <Trash2 className="w-7 h-7 text-rose-500 dark:text-rose-400" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">¿Eliminar ingrediente?</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Se eliminará <span className="text-white font-semibold">{modal.item.name}</span>.
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2">¿Eliminar ingrediente?</h2>
+            <p className="text-stone-500 dark:text-slate-400 text-sm mb-6">
+              Se eliminará <span className="text-stone-900 dark:text-white font-semibold">{modal.item.name}</span>.
               Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={close}
                 disabled={isPending}
-                className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -297,13 +294,11 @@ function IngredientsContent() {
   );
 }
 
-// ---- Shared sub-components ----
-
 function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-8">
+      <div className="absolute inset-0 bg-black/40 dark:bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-3xl shadow-2xl p-8">
         {children}
       </div>
     </div>
@@ -315,7 +310,7 @@ function CloseBtn({ onClose, disabled }: { onClose: () => void; disabled: boolea
     <button
       onClick={onClose}
       disabled={disabled}
-      className="text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-50"
+      className="text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50"
     >
       <X className="w-5 h-5" />
     </button>
@@ -325,7 +320,7 @@ function CloseBtn({ onClose, disabled }: { onClose: () => void; disabled: boolea
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-medium text-stone-500 dark:text-slate-400 uppercase tracking-wider">{label}</label>
       {children}
     </div>
   );
@@ -333,7 +328,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="bg-rose-500/10 border border-rose-500/40 text-rose-400 px-4 py-2.5 rounded-xl text-sm">
+    <div className="bg-rose-500/10 border border-rose-500/40 text-rose-500 dark:text-rose-400 px-4 py-2.5 rounded-xl text-sm">
       {message}
     </div>
   );
@@ -356,14 +351,14 @@ function ModalActions({
         type="button"
         onClick={onCancel}
         disabled={disabled}
-        className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+        className="flex-1 py-3 rounded-xl border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
       >
         Cancelar
       </button>
       <button
         type="submit"
         disabled={disabled}
-        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+        className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : label}
       </button>
@@ -372,4 +367,4 @@ function ModalActions({
 }
 
 const inputClass =
-  "w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm";
+  "w-full px-4 py-3 bg-stone-100 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-xl text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm";

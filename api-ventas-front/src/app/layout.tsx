@@ -1,8 +1,11 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { RefineProvider } from "@/providers/RefineProvider";
-import { Toaster } from "sonner";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { ToasterWrapper } from "@/components/ToasterWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,13 +29,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <RefineProvider>
-          {children}
-        </RefineProvider>
-        <Toaster theme="dark" richColors position="top-right" />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {/* Sets .dark class before first paint to prevent flash of wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('theme');document.documentElement.classList.toggle('dark',t==='dark'||t==null)}catch(e){document.documentElement.classList.add('dark')}`,
+          }}
+        />
+        <ThemeProvider>
+          <RefineProvider>
+            {children}
+          </RefineProvider>
+          <ToasterWrapper />
+        </ThemeProvider>
       </body>
     </html>
   );

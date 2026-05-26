@@ -89,6 +89,11 @@ export const authProvider: AuthProvider = {
       }
     }
 
+    // Mid-flow: user has a pending_token and needs to select a branch
+    if (localStorage.getItem("pending_token")) {
+      return { authenticated: false, redirectTo: "/select-branch" };
+    }
+
     return { authenticated: false, logout: true, redirectTo: "/login" };
   },
 

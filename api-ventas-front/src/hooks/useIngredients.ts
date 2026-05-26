@@ -9,6 +9,7 @@ export type Unit = (typeof UNITS)[number];
 
 export interface Ingredient {
   id: number;
+  branch_id: number;
   name: string;
   unit: Unit;
   cost_per_unit: number;
@@ -20,32 +21,35 @@ export interface IngredientPayload {
   cost_per_unit: number;
 }
 
-const QK = ["ingredients"] as const;
-
 function apiError(err: unknown): string {
   const e = err as { response?: { data?: { detail?: string } } };
   return e.response?.data?.detail || "Error al realizar la operación";
 }
 
-export function useIngredients() {
+function qk(branchId: number | null) {
+  return ["ingredients", branchId] as const;
+}
+
+export function useIngredients(branchId: number | null) {
   return useQuery<Ingredient[]>({
-    queryKey: QK,
+    queryKey: qk(branchId),
     queryFn: async () => {
-      const { data } = await apiClient.get("/ingredients/");
+      const { data } = await apiClient.get(`/branches/${branchId}/ingredients/`);
       return data;
     },
+    enabled: branchId !== null,
   });
 }
 
 export function useCreateIngredient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: IngredientPayload) => {
-      const { data } = await apiClient.post("/ingredients/", payload);
+    mutationFn: async ({ branchId, payload }: { branchId: number; payload: IngredientPayload }) => {
+      const { data } = await apiClient.post(`/branches/${branchId}/ingredients/`, payload);
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QK });
+    onSuccess: (_, { branchId }) => {
+      qc.invalidateQueries({ queryKey: qk(branchId) });
       toast.success("Ingrediente creado");
     },
     onError: (err) => toast.error(apiError(err)),
@@ -55,12 +59,12 @@ export function useCreateIngredient() {
 export function useUpdateIngredient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: number; payload: IngredientPayload }) => {
-      const { data } = await apiClient.patch(`/ingredients/${id}`, payload);
+    mutationFn: async ({ branchId, id, payload }: { branchId: number; id: number; payload: IngredientPayload }) => {
+      const { data } = await apiClient.patch(`/branches/${branchId}/ingredients/${id}`, payload);
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QK });
+    onSuccess: (_, { branchId }) => {
+      qc.invalidateQueries({ queryKey: qk(branchId) });
       toast.success("Ingrediente actualizado");
     },
     onError: (err) => toast.error(apiError(err)),
@@ -70,11 +74,11 @@ export function useUpdateIngredient() {
 export function useDeleteIngredient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => {
-      await apiClient.delete(`/ingredients/${id}`);
+    mutationFn: async ({ branchId, id }: { branchId: number; id: number }) => {
+      await apiClient.delete(`/branches/${branchId}/ingredients/${id}`);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QK });
+    onSuccess: (_, { branchId }) => {
+      qc.invalidateQueries({ queryKey: qk(branchId) });
       toast.success("Ingrediente eliminado");
     },
     onError: (err) => toast.error(apiError(err)),
