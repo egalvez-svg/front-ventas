@@ -57,7 +57,7 @@ export default function LoginPage() {
             <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-amber-500/25">
               <Store className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-white">POS Restaurant</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-white">Garage Restaurant</h1>
             <p className="text-stone-500 dark:text-slate-400 text-sm mt-2">Bienvenido de nuevo, ingresa tus credenciales</p>
           </div>
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-stone-200 dark:border-slate-800 text-center text-xs text-stone-400 dark:text-slate-500">
-            &copy; 2026 POS Restaurant Multi-sucursal. Todos los derechos reservados.
+            &copy; 2026 Garage Restaurant. Todos los derechos reservados.
           </div>
         </div>
       </motion.div>
