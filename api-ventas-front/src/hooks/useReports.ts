@@ -228,25 +228,36 @@ export function useMonthlyTrendReport(
   });
 }
 
+export interface FrequentlyBoughtWith {
+  product_id: number;
+  product_name: string;
+  co_order_count: number;
+  percentage: number;
+}
+
 export interface TopProduct {
   rank: number;
   product_id: number;
   product_name: string;
+  category_id: number;
+  category_name: string;
   total_quantity: number;
   total_revenue: number;
   order_count: number;
+  frequently_bought_with: FrequentlyBoughtWith[];
 }
 
 export function useTopProductsReport(
   branchId: number | null,
   days = 30,
-  limit = 10
+  limit = 10,
+  coLimit = 5
 ) {
   return useQuery<TopProduct[]>({
-    queryKey: ["reports", "top-products", branchId, days, limit],
+    queryKey: ["reports", "top-products", branchId, days, limit, coLimit],
     queryFn: async () => {
       const { data } = await apiClient.get<TopProduct[]>(
-        `/branches/${branchId}/reports/top-products?days=${days}&limit=${limit}`
+        `/branches/${branchId}/reports/top-products?days=${days}&limit=${limit}&co_limit=${coLimit}`
       );
       return data;
     },
