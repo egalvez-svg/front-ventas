@@ -103,7 +103,7 @@ export function StockAlerts() {
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
                 <span className="flex-1 text-sm text-stone-700 dark:text-slate-300 truncate min-w-0">
-                  {item.name}
+                  {item.ingredient_name || item.name}
                 </span>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="w-16 h-1.5 bg-stone-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -113,7 +113,7 @@ export function StockAlerts() {
                     />
                   </div>
                   <span className="text-xs font-semibold text-orange-500 dark:text-orange-400 w-12 text-right">
-                    {item.quantity}
+                    {parseFloat(item.quantity.toFixed(2))}
                     <span className="text-stone-400 dark:text-slate-600 font-normal"> {item.unit}</span>
                   </span>
                 </div>
