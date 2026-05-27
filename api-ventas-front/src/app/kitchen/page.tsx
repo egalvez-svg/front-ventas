@@ -14,7 +14,7 @@ export default function KitchenPage() {
     <Authenticated
       key="kitchen-page"
       loading={
-        <div className="min-h-screen bg-[#080c18] flex items-center justify-center">
+        <div className="min-h-screen bg-stone-50 dark:bg-[#080c18] flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
         </div>
       }
@@ -59,7 +59,7 @@ const URGENCY_STYLES = {
     timer: "text-emerald-400",
     timerBg: "bg-emerald-500/10",
     badge: "Nuevo",
-    badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    badgeColor: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
     icon: <Clock className="w-3 h-3" />,
   },
   warn: {
@@ -69,7 +69,7 @@ const URGENCY_STYLES = {
     timer: "text-amber-400",
     timerBg: "bg-amber-500/10",
     badge: "Atención",
-    badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    badgeColor: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30",
     icon: <AlertTriangle className="w-3 h-3" />,
   },
   urgent: {
@@ -79,7 +79,7 @@ const URGENCY_STYLES = {
     timer: "text-rose-400",
     timerBg: "bg-rose-500/10",
     badge: "¡Urgente!",
-    badgeColor: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+    badgeColor: "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30",
     icon: <AlertTriangle className="w-3 h-3" />,
   },
 };
@@ -115,39 +115,35 @@ function KitchenContent() {
 
   const lastUpdated = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString("es-CL", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      })
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    })
     : null;
 
   const pending = orders?.length ?? 0;
   const urgent = orders?.filter((o) => urgency(elapsed(o.created_at).mins) === "urgent").length ?? 0;
 
   return (
-    <div className="h-screen bg-[#080c18] text-slate-50 flex flex-col">
+    <div className="h-screen bg-stone-50 dark:bg-[#080c18] text-stone-900 dark:text-slate-50 flex flex-col">
       <AppHeader
         icon={<ChefHat className="w-5 h-5 text-amber-400" />}
         title="Cocina"
-        subtitle={branchId ? `Sucursal #${branchId}` : "Sin sucursal"}
         actions={
           <div className="flex items-center gap-2">
-            {/* Pending count */}
             {pending > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-400 font-bold">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-600 dark:text-amber-400 font-bold">
                 <ChefHat className="w-3.5 h-3.5" />
                 {pending} pedido{pending !== 1 ? "s" : ""}
               </div>
             )}
-            {/* Urgent count */}
             {urgent > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400 font-bold animate-pulse">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-600 dark:text-rose-400 font-bold animate-pulse">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 {urgent} urgente{urgent !== 1 ? "s" : ""}
               </div>
             )}
-            {/* Refresh indicator */}
-            {isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />}
+            {isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-stone-400 dark:text-slate-500" />}
             {lastUpdated && (
-              <span className="text-[10px] text-slate-600 hidden sm:block">
+              <span className="text-[10px] text-stone-400 dark:text-slate-600 hidden sm:block">
                 {lastUpdated}
               </span>
             )}
@@ -158,9 +154,9 @@ function KitchenContent() {
       <main className="flex-1 overflow-y-auto p-5">
         {branchId === null ? (
           <div className="flex items-center justify-center h-full">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm text-center">
-              <Store className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">Tu cuenta no tiene una sucursal asignada.</p>
+            <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl p-8 max-w-sm text-center">
+              <Store className="w-10 h-10 text-stone-400 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-stone-500 dark:text-slate-400 text-sm">Tu cuenta no tiene una sucursal asignada.</p>
             </div>
           </div>
         ) : isLoading ? (
@@ -168,7 +164,7 @@ function KitchenContent() {
             <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
           </div>
         ) : isError ? (
-          <div className="flex items-center justify-center h-full text-slate-500">
+          <div className="flex items-center justify-center h-full text-stone-400 dark:text-slate-500">
             <p>Error al cargar los pedidos de cocina</p>
           </div>
         ) : (
@@ -194,8 +190,8 @@ function KitchenContent() {
             {readyForPickup.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <BellRing className="w-4 h-4 text-sky-400 animate-pulse" />
-                  <h2 className="text-xs font-bold uppercase tracking-widest text-sky-400">
+                  <BellRing className="w-4 h-4 text-sky-500 dark:text-sky-400 animate-pulse" />
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-sky-600 dark:text-sky-400">
                     Listo para retirar — {readyForPickup.length} mesa{readyForPickup.length !== 1 ? "s" : ""}
                   </h2>
                 </div>
@@ -211,13 +207,13 @@ function KitchenContent() {
             )}
 
             {(orders?.length ?? 0) === 0 && readyForPickup.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-700">
-                <div className="w-24 h-24 rounded-full bg-slate-900/60 flex items-center justify-center">
-                  <ChefHat className="w-12 h-12 opacity-40" />
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <div className="w-24 h-24 rounded-full bg-stone-200 dark:bg-slate-900/60 flex items-center justify-center">
+                  <ChefHat className="w-12 h-12 text-stone-400 dark:text-slate-700 opacity-40" />
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-semibold text-slate-500">Todo al día</p>
-                  <p className="text-sm text-slate-600 mt-1">Los nuevos pedidos aparecerán aquí automáticamente</p>
+                  <p className="text-lg font-semibold text-stone-500 dark:text-slate-500">Todo al día</p>
+                  <p className="text-sm text-stone-400 dark:text-slate-600 mt-1">Los nuevos pedidos aparecerán aquí automáticamente</p>
                 </div>
               </div>
             )}
@@ -237,31 +233,31 @@ function OrderCard({
   isPending: boolean;
   tick: number;
 }) {
-  void tick; // provoca re-render para actualizar el timer
+  void tick;
   const { text: elapsedText, mins } = elapsed(order.created_at);
   const level = urgency(mins);
   const styles = URGENCY_STYLES[level];
 
   return (
     <div
-      className={`rounded-2xl border ${styles.border} ${styles.bg} ${styles.glow} flex flex-col gap-0 overflow-hidden transition-all`}
+      className={`rounded-2xl border ${styles.border} ${styles.bg} ${styles.glow} bg-white/70 dark:bg-transparent flex flex-col gap-0 overflow-hidden transition-all`}
     >
       {/* Card header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/80 dark:border-white/5">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Pedido</p>
-          <p className="text-2xl font-black text-white leading-none">#{order.id}</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Pedido</p>
+          <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">#{order.id}</p>
         </div>
         <div className="text-right">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Mesa</p>
-          <p className="text-2xl font-black text-white leading-none">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Mesa</p>
+          <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">
             {order.table_number ?? order.table_id}
           </p>
         </div>
       </div>
 
       {/* Status badge */}
-      <div className="px-4 py-2 border-b border-white/5">
+      <div className="px-4 py-2 border-b border-stone-200/80 dark:border-white/5">
         <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${styles.badgeColor}`}>
           {styles.icon}
           {styles.badge} · {elapsedText}
@@ -272,15 +268,15 @@ function OrderCard({
       <div className="flex-1 px-4 py-3 space-y-2.5">
         {order.items.map((item, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center text-sm font-black text-white flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-stone-200 dark:bg-slate-800/80 border border-stone-300 dark:border-slate-700/50 flex items-center justify-center text-sm font-black text-stone-900 dark:text-white flex-shrink-0">
               {item.quantity}
             </span>
             <div className="min-w-0 pt-0.5">
-              <p className="text-sm font-semibold text-slate-200 leading-tight">
+              <p className="text-sm font-semibold text-stone-800 dark:text-slate-200 leading-tight">
                 {item.product_name ?? productMap[item.product_id] ?? `Producto #${item.product_id}`}
               </p>
               {item.notes && (
-                <p className="flex items-center gap-1 text-xs text-amber-400/90 mt-0.5">
+                <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400/90 mt-0.5">
                   <MessageSquare className="w-3 h-3 flex-shrink-0" />
                   {item.notes}
                 </p>
@@ -316,22 +312,22 @@ function ReadyCard({
   productMap: Record<number, string>;
 }) {
   return (
-    <div className="rounded-2xl border border-sky-500/40 bg-sky-500/5 flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+    <div className="rounded-2xl border border-sky-500/40 bg-sky-500/5 bg-white/70 dark:bg-transparent flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/80 dark:border-white/5">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Pedido</p>
-          <p className="text-2xl font-black text-white leading-none">#{order.id}</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Pedido</p>
+          <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">#{order.id}</p>
         </div>
         <div className="text-right">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Mesa</p>
-          <p className="text-2xl font-black text-white leading-none">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Mesa</p>
+          <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">
             {order.table_number ?? order.table_id}
           </p>
         </div>
       </div>
 
-      <div className="px-4 py-2 border-b border-white/5">
-        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 border-sky-500/30">
+      <div className="px-4 py-2 border-b border-stone-200/80 dark:border-white/5">
+        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-600 dark:text-sky-300 border-sky-500/30">
           <BellRing className="w-3 h-3" />
           Listo para retirar
         </div>
@@ -340,15 +336,15 @@ function ReadyCard({
       <div className="flex-1 px-4 py-3 space-y-2.5">
         {order.items.map((item, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center text-sm font-black text-white flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-stone-200 dark:bg-slate-800/80 border border-stone-300 dark:border-slate-700/50 flex items-center justify-center text-sm font-black text-stone-900 dark:text-white flex-shrink-0">
               {item.quantity}
             </span>
             <div className="min-w-0 pt-0.5">
-              <p className="text-sm font-semibold text-slate-200 leading-tight">
+              <p className="text-sm font-semibold text-stone-800 dark:text-slate-200 leading-tight">
                 {item.product_name ?? productMap[item.product_id] ?? `Producto #${item.product_id}`}
               </p>
               {item.notes && (
-                <p className="flex items-center gap-1 text-xs text-amber-400/90 mt-0.5">
+                <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400/90 mt-0.5">
                   <MessageSquare className="w-3 h-3 flex-shrink-0" />
                   {item.notes}
                 </p>

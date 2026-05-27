@@ -19,6 +19,7 @@ import {
   LogOut,
   ShieldCheck,
   X,
+  DollarSign,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -60,27 +61,28 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Gestión",
     items: [
-      { href: "/admin/users",       icon: <Users className="w-4 h-4" />,       label: "Usuarios" },
-      { href: "/admin/categories",  icon: <Tag className="w-4 h-4" />,          label: "Categorías" },
+      { href: "/admin/users", icon: <Users className="w-4 h-4" />, label: "Usuarios" },
+      { href: "/admin/categories", icon: <Tag className="w-4 h-4" />, label: "Categorías" },
       { href: "/admin/ingredients", icon: <FlaskConical className="w-4 h-4" />, label: "Ingredientes" },
-      { href: "/admin/products",    icon: <ShoppingBag className="w-4 h-4" />,  label: "Productos" },
-      { href: "/admin/stock",       icon: <Package className="w-4 h-4" />,      label: "Stock" },
-      { href: "/admin/tables",      icon: <Grid3x3 className="w-4 h-4" />,      label: "Mesas" },
+      { href: "/admin/products", icon: <ShoppingBag className="w-4 h-4" />, label: "Productos" },
+      { href: "/admin/stock", icon: <Package className="w-4 h-4" />, label: "Stock" },
+      { href: "/admin/tables", icon: <Grid3x3 className="w-4 h-4" />, label: "Mesas" },
     ],
   },
   {
     title: "Operaciones",
     items: [
-      { href: "/admin/orders",   icon: <ClipboardList className="w-4 h-4" />, label: "Pedidos" },
-      { href: "/admin/shifts",   icon: <Clock className="w-4 h-4" />,         label: "Turnos" },
-      { href: "/admin/branches", icon: <Building2 className="w-4 h-4" />,     label: "Sucursales" },
+      { href: "/admin/orders", icon: <ClipboardList className="w-4 h-4" />, label: "Pedidos" },
+      { href: "/admin/shifts", icon: <Clock className="w-4 h-4" />, label: "Turnos" },
+      { href: "/admin/branches", icon: <Building2 className="w-4 h-4" />, label: "Sucursales" },
     ],
   },
   {
     title: "Accesos rápidos",
     items: [
-      { href: "/pos",     icon: <Store className="w-4 h-4" />,           label: "Punto de Venta" },
+      { href: "/pos", icon: <Store className="w-4 h-4" />, label: "Punto de Venta" },
       { href: "/kitchen", icon: <UtensilsCrossed className="w-4 h-4" />, label: "Vista Cocina" },
+      { href: "/cashier", icon: <DollarSign className="w-4 h-4" />, label: "Caja" },
     ],
   },
 ];
@@ -144,11 +146,10 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        active
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${active
                           ? "bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           : "text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800/50"
-                      }`}
+                        }`}
                     >
                       <span className={`flex-shrink-0 transition-colors ${active ? "text-amber-500 dark:text-amber-400" : "text-stone-400 dark:text-slate-600"}`}>
                         {item.icon}

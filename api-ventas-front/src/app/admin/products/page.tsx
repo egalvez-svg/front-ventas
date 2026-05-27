@@ -36,6 +36,7 @@ type Modal =
   | { mode: "create" }
   | { mode: "edit"; item: Product }
   | { mode: "deactivate"; item: Product }
+  | { mode: "confirm-recipe"; item: Product }
   | { mode: "recipe"; item: Product };
 
 const EMPTY_FORM: ProductPayload = {
@@ -130,7 +131,13 @@ function ProductsContent() {
       category_id: Number(form.category_id),
     };
     if (modal.mode === "create") {
-      createProduct.mutate({ branchId: selectedBranchId, payload }, { onSuccess: close, onError: handleApiError });
+      createProduct.mutate(
+        { branchId: selectedBranchId, payload },
+        {
+          onSuccess: (created) => setModal({ mode: "confirm-recipe", item: created }),
+          onError: handleApiError,
+        }
+      );
     } else if (modal.mode === "edit") {
       updateProduct.mutate({ branchId: selectedBranchId, id: modal.item.id, payload }, { onSuccess: close, onError: handleApiError });
     }
@@ -448,6 +455,37 @@ function ProductsContent() {
                 ) : (
                   "Desactivar"
                 )}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* Confirm Recipe after Create */}
+      {modal.mode === "confirm-recipe" && (
+        <ModalOverlay onClose={close}>
+          <div className="text-center">
+            <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-7 h-7 text-amber-500" />
+            </div>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2">¿Tiene receta?</h2>
+            <p className="text-stone-500 dark:text-slate-400 text-sm mb-6">
+              <span className="text-stone-900 dark:text-white font-semibold">{modal.item.name}</span> fue creado exitosamente.
+              ¿Deseas agregar su receta ahora?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={close}
+                className="flex-1 py-3 rounded-xl border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                No, omitir
+              </button>
+              <button
+                onClick={() => setModal({ mode: "recipe", item: modal.item })}
+                className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                Sí, agregar receta
               </button>
             </div>
           </div>
