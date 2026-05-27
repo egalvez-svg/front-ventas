@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Users,
   Plus,
@@ -72,8 +72,20 @@ export default function UsersPage() {
 
 function UsersContent() {
   const [search, setSearch] = useState("");
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
+  const [currentBranchId, setCurrentBranchId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentRole(localStorage.getItem("user_role"));
+    const bid = localStorage.getItem("branch_id");
+    if (bid) setCurrentBranchId(Number(bid));
+  }, []);
+
+  const isAdmin = currentRole === "admin";
+
   const { data: users, isLoading, isError } = useUsers();
   const { data: branches = [] } = useBranches();
+  const availableBranches = isAdmin ? branches : branches.filter((b) => b.id === currentBranchId);
 
   const filteredUsers = useMemo(
     () => (users ?? []).filter(
@@ -102,7 +114,7 @@ function UsersContent() {
   const isPending = createUser.isPending || updateUser.isPending || deleteUser.isPending;
 
   const openCreate = () => {
-    setForm({ email: "", full_name: "", password: "", role: "waiter", branch_id: null });
+    setForm({ email: "", full_name: "", password: "", role: "waiter", branch_id: isAdmin ? null : currentBranchId });
     setMemberships([]);
     setFormError("");
     setModal({ mode: "create" });
@@ -349,19 +361,21 @@ function UsersContent() {
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-stone-500 dark:text-slate-400 uppercase tracking-wider">Sucursal (opcional)</label>
-                    <select
-                      value={form.branch_id ?? ""}
-                      onChange={(e) => setForm((p) => ({ ...p, branch_id: e.target.value === "" ? null : Number(e.target.value) }))}
-                      className={inputClass}
-                    >
-                      <option value="">Sin asignar</option>
-                      {branches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {isAdmin && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-stone-500 dark:text-slate-400 uppercase tracking-wider">Sucursal (opcional)</label>
+                      <select
+                        value={form.branch_id ?? ""}
+                        onChange={(e) => setForm((p) => ({ ...p, branch_id: e.target.value === "" ? null : Number(e.target.value) }))}
+                        className={inputClass}
+                      >
+                        <option value="">Sin asignar</option>
+                        {branches.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -398,8 +412,8 @@ function UsersContent() {
                         onChange={(e) => setMemberships((p) => p.map((x, idx) => idx === i ? { ...x, branch_id: e.target.value === "" ? null : Number(e.target.value) } : x))}
                         className="flex-1 px-3 py-2 bg-stone-100 dark:bg-slate-800 border border-stone-300 dark:border-slate-700 rounded-xl text-stone-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
                       >
-                        <option value="">Global</option>
-                        {branches.map((b) => (
+                        {isAdmin && <option value="">Global</option>}
+                        {availableBranches.map((b) => (
                           <option key={b.id} value={b.id}>{b.name}</option>
                         ))}
                       </select>
