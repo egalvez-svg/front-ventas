@@ -61,14 +61,16 @@ export function AppHeader({ icon, title, subtitle, actions, back }: AppHeaderPro
 
   return (
     <header className="flex items-center gap-3 px-4 py-3 border-b border-stone-200 dark:border-slate-800/50 bg-white/90 dark:bg-[#080c17]/90 backdrop-blur-sm flex-shrink-0 z-10">
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={() => { }}
-        className="lg:hidden p-2 rounded-lg text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800/60 transition-colors"
-        aria-label="Abrir menú"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      {/* Hamburger — solo para admin/manager que tienen sidebar */}
+      {(role === "admin" || role === "manager") && (
+        <button
+          onClick={() => { }}
+          className="lg:hidden p-2 rounded-lg text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800/60 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
 
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 flex-shrink-0">
