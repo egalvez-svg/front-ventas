@@ -1,10 +1,10 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useEffect } from "react";
-import { Grid3x3, Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Grid3x3, Plus, Pencil, Trash2, Loader2, X, Search } from "lucide-react";
 import { useTables, useCreateTable, useUpdateTable, useDeleteTable, type Table, type TablePayload } from "@/hooks/useTables";
-import { useBranches } from "@/hooks/useBranches";
+import { useAdminBranchSelect } from "@/hooks/useAdminBranchSelect";
 
 
 type Modal =
@@ -29,16 +29,15 @@ export default function TablesPage() {
 }
 
 function TablesContent() {
-  const { data: branches, isLoading: branchesLoading } = useBranches();
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (branches?.length && selectedBranchId === null) {
-      setSelectedBranchId(branches[0].id);
-    }
-  }, [branches, selectedBranchId]);
+  const { branches, selectedBranchId, setSelectedBranchId, isLoading: branchesLoading, isManager } = useAdminBranchSelect();
+  const [search, setSearch] = useState("");
 
   const { data: tables, isLoading: tablesLoading, isError } = useTables(selectedBranchId);
+
+  const filteredTables = useMemo(
+    () => (tables ?? []).filter((t) => String(t.number).toLowerCase().includes(search.toLowerCase())),
+    [tables, search]
+  );
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
   const deleteTable = useDeleteTable();
@@ -78,17 +77,23 @@ function TablesContent() {
           <h1 className="text-base font-bold text-stone-900 dark:text-white">Gestión de Mesas</h1>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={selectedBranchId || ""}
-            onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-            className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-          >
-            {!branches?.length && branchesLoading ? (
-              <option>Cargando...</option>
-            ) : (
-              branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
-            )}
-          </select>
+          {isManager ? (
+            <span className="px-3 py-1.5 text-sm font-medium text-stone-700 dark:text-slate-200 bg-stone-100 dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-xl">
+              {branches?.[0]?.name ?? "—"}
+            </span>
+          ) : (
+            <select
+              value={selectedBranchId || ""}
+              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+              className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+            >
+              {!branches?.length && branchesLoading ? (
+                <option>Cargando...</option>
+              ) : (
+                branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
+              )}
+            </select>
+          )}
           <button
             onClick={openCreate}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 text-sm shadow-md shadow-amber-500/20"
@@ -100,6 +105,18 @@ function TablesContent() {
       </div>
 
       <div className="p-6 space-y-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
+            <input
+              type="text"
+              placeholder="Buscar mesa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
+            />
+          </div>
+        </div>
         {tablesLoading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
@@ -132,8 +149,14 @@ function TablesContent() {
             </div>
 
             {/* Table grid */}
+            {!filteredTables.length ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4 text-stone-400 dark:text-slate-500">
+                <Grid3x3 className="w-12 h-12 opacity-20" />
+                <p>Sin resultados</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {tables.map((table) => {
+              {filteredTables.map((table) => {
                 const cfg =
                   table.status === 'occupied'
                     ? { accent: 'bg-rose-500', ring: 'border-rose-200 dark:border-rose-900/60', icon: 'bg-rose-500/15 text-rose-600 dark:text-rose-400', badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400', label: 'Ocupada' }
@@ -184,6 +207,7 @@ function TablesContent() {
                 );
               })}
             </div>
+            )}
           </>
         )}
       </div>
