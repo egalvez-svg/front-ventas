@@ -36,7 +36,9 @@ function useBranchId() {
 }
 
 function elapsed(createdAt: string): { text: string; mins: number } {
-  const diffMs = Date.now() - new Date(createdAt).getTime();
+  // Append Z if no timezone info so JS parses as UTC instead of local time
+  const ts = createdAt.includes("Z") || createdAt.includes("+") ? createdAt : createdAt + "Z";
+  const diffMs = Math.max(0, Date.now() - new Date(ts).getTime());
   const mins = Math.floor(diffMs / 60_000);
   const secs = Math.floor((diffMs % 60_000) / 1000);
   return {

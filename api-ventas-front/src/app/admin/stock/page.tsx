@@ -42,10 +42,18 @@ function StockContent() {
 
   const filteredStock = useMemo(() => {
     if (!stock) return [];
-    return stock.filter((item) =>
-      (item.name ?? "").toLowerCase().includes(search.toLowerCase())
+    const filtered = stock.filter((item) =>
+      (item.ingredient_name ?? "").toLowerCase().includes(search.toLowerCase())
     );
+    return filtered.sort((a, b) => {
+      const aCritical = a.quantity <= a.min_stock;
+      const bCritical = b.quantity <= b.min_stock;
+      if (aCritical !== bCritical) return aCritical ? -1 : 1;
+      return (a.quantity - a.min_stock) - (b.quantity - b.min_stock);
+    });
   }, [stock, search]);
+
+  const fmtQty = (n: number) => parseFloat(n.toFixed(2));
 
   const handleEdit = (item: StockItem) => {
     setEditingId(item.ingredient_id);
@@ -147,7 +155,7 @@ function StockContent() {
                           ) : (
                             <span className={`font-mono text-base ${isCritical ? "text-rose-500 dark:text-rose-400 font-bold" : "text-stone-700 dark:text-slate-300"
                               }`}>
-                              {item.quantity}
+                              {fmtQty(item.quantity)}
                             </span>
                           )}
                         </td>
@@ -164,7 +172,7 @@ function StockContent() {
                             />
                           ) : (
                             <span className="font-mono text-stone-400 dark:text-slate-500">
-                              {item.min_stock}
+                              {fmtQty(item.min_stock)}
                             </span>
                           )}
                         </td>
