@@ -7,6 +7,7 @@ import {
   usePayTable,
   type TableInvoice,
 } from "@/hooks/useOrders";
+import { useReleaseTable } from "@/hooks/useTables";
 
 const TIP_OPTIONS = [
   { label: "Sin propina", value: 0 },
@@ -28,6 +29,7 @@ export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: P
 
   const { data: invoice, isLoading, isError } = useTableInvoice(branchId, tableId);
   const payTable = usePayTable();
+  const releaseTable = useReleaseTable();
 
   const base = invoice?.subtotal ?? 0;
   const tipAmount = Math.round(base * tipPercent / 100);
@@ -37,7 +39,12 @@ export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: P
   const handlePay = () => {
     payTable.mutate(
       { branchId, tableId, tip: tipAmount || undefined },
-      { onSuccess: () => setPaidTotal(grandTotal) }
+      {
+        onSuccess: () => {
+          releaseTable.mutate({ branchId, tableId });
+          setPaidTotal(grandTotal);
+        },
+      }
     );
   };
 

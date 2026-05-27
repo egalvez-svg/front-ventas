@@ -79,6 +79,23 @@ export function useUpdateTable() {
   });
 }
 
+export function useReleaseTable() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ branchId, tableId }: { branchId: number; tableId: number }) => {
+      const { data } = await apiClient.patch(
+        `/branches/${branchId}/tables/${tableId}`,
+        { status: "available" }
+      );
+      return data;
+    },
+    onSuccess: (_, { branchId }) => {
+      qc.invalidateQueries({ queryKey: qk(branchId) });
+    },
+    onError: (err) => toast.error(apiError(err)),
+  });
+}
+
 export function useDeleteTable() {
   const qc = useQueryClient();
   return useMutation({
