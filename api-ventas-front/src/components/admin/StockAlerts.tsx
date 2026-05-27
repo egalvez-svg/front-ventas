@@ -1,23 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AlertTriangle, Package, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useStock } from "@/hooks/useStock";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 export function StockAlerts() {
-  const [branchId, setBranchId] = useState<number | null>(null);
-  const [ready, setReady] = useState(false);
+  const { selectedBranchId } = useAdminBranch();
 
-  useEffect(() => {
-    const bid = localStorage.getItem("branch_id");
-    setBranchId(bid ? Number(bid) : null);
-    setReady(true);
-  }, []);
+  const { data: criticalItems, isLoading } = useStock(selectedBranchId, true);
 
-  const { data: criticalItems, isLoading } = useStock(ready ? branchId : null, true);
-
-  if (!ready || isLoading) {
+  if (isLoading) {
     return (
       <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -35,7 +28,7 @@ export function StockAlerts() {
     );
   }
 
-  if (!branchId) {
+  if (!selectedBranchId) {
     return (
       <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-3">

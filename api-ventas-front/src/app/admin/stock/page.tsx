@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useStock, useUpdateStock, type StockItem } from "@/hooks/useStock";
-import { useAdminBranchSelect } from "@/hooks/useAdminBranchSelect";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 
 export default function StockPage() {
@@ -31,7 +31,7 @@ export default function StockPage() {
 }
 
 function StockContent() {
-  const { branches, selectedBranchId, setSelectedBranchId, isLoading: branchesLoading, isManager } = useAdminBranchSelect();
+  const { selectedBranchId } = useAdminBranch();
   const [search, setSearch] = useState("");
 
   const { data: stock, isLoading: stockLoading, isError } = useStock(selectedBranchId);
@@ -70,25 +70,6 @@ function StockContent() {
           <h1 className="text-base font-bold text-stone-900 dark:text-white">Gestión de Stock</h1>
         </div>
         <div className="flex items-center gap-2">
-          {isManager ? (
-            <span className="px-3 py-1.5 text-sm font-medium text-stone-700 dark:text-slate-200 bg-stone-100 dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-xl">
-              {branches?.[0]?.name ?? "—"}
-            </span>
-          ) : (
-            <select
-              value={selectedBranchId || ""}
-              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-              className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-            >
-              {!branches?.length && branchesLoading ? (
-                <option>Cargando...</option>
-              ) : (
-                branches?.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))
-              )}
-            </select>
-          )}
         </div>
       </div>
 

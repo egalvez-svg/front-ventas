@@ -2,10 +2,10 @@
 
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Menu, Store, Building2, ShieldCheck, LogOut, CircleUser } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Menu, Store, Building2, ShieldCheck, LogOut, CircleUser, ChevronDown, Check } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useBranches } from "@/hooks/useBranches";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
@@ -38,21 +38,28 @@ interface AdminTopBarProps {
 export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
   const { mutate: logout } = useLogout();
   const { data: identity } = useGetIdentity<UserIdentity>();
-  const { data: branches } = useBranches();
-  const [role, setRole] = useState<string | null>(null);
-  const [branchId, setBranchId] = useState<string | null>(null);
+  const { selectedBranchId, setSelectedBranchId, role, branches } = useAdminBranch();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setRole(localStorage.getItem("user_role"));
-    setBranchId(localStorage.getItem("branch_id"));
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const userName = identity?.full_name || identity?.name || identity?.email || identity?.username;
-  const branch = branches?.find((b) => b.id.toString() === branchId);
-  const branchName = branch?.name ?? (branchId ? `Sucursal #${branchId}` : null);
+  const selectedBranch = branches?.find((b) => b.id === selectedBranchId);
+  const branchName = selectedBranch?.name ?? (selectedBranchId ? `Sucursal #${selectedBranchId}` : null);
   const roleColor = role
     ? (ROLE_COLORS[role] ?? "text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-600 bg-stone-100 dark:bg-slate-800")
     : "";
+  const isAdmin = role === "admin";
+  const canSwitchBranch = isAdmin && branches && branches.length > 1;
 
   return (
     <header className="flex items-center gap-3 px-4 py-3 border-b border-stone-200 dark:border-slate-800/50 bg-white/90 dark:bg-[#080c17]/90 backdrop-blur-sm flex-shrink-0 z-10">
@@ -89,13 +96,39 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
           </div>
         )}
 
-        {/* Branch */}
-        {branchName && (
+        {/* Branch — selector for admin, static label for manager */}
+        {canSwitchBranch ? (
+          <div className="hidden md:block relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-slate-800/60 text-sm text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200 hover:bg-stone-200 dark:hover:bg-slate-700/60 transition-colors"
+            >
+              <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate max-w-28">{branchName ?? "Todas las sucursales"}</span>
+              <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-52 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1 overflow-hidden">
+                {branches!.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => { setSelectedBranchId(b.id); setDropdownOpen(false); }}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-stone-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <span className="truncate">{b.name}</span>
+                    {b.id === selectedBranchId && <Check className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : branchName ? (
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-slate-800/60 text-sm text-stone-500 dark:text-slate-400">
             <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate max-w-28">{branchName}</span>
           </div>
-        )}
+        ) : null}
 
         {/* Role badge */}
         {role && (

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Authenticated } from "@refinedev/core";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 import { TrendingUp, Loader2, ShoppingCart } from "lucide-react";
 import { useTopProductsReport } from "@/hooks/useReports";
 
@@ -31,14 +32,9 @@ export default function TopProductsPage() {
 }
 
 function TopProductsContent() {
-  const [branchId, setBranchId] = useState<number | null>(null);
+  const { selectedBranchId: branchId } = useAdminBranch();
   const [days, setDays] = useState(30);
   const [limit, setLimit] = useState(10);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("branch_id");
-    if (stored) setBranchId(Number(stored));
-  }, []);
 
   const { data: products, isLoading, isError } = useTopProductsReport(branchId, days, limit);
 
