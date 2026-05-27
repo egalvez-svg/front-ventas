@@ -7,6 +7,7 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { ROUTE_ROLES } from "@/lib/roles";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
+import { AdminBranchProvider } from "@/providers/AdminBranchContext";
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,17 +22,19 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       }
     >
       <RoleGuard allowedRoles={ROUTE_ROLES.admin}>
-        <div className="flex h-screen bg-stone-50 dark:bg-slate-950 overflow-hidden">
-          <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <AdminBranchProvider>
+          <div className="flex h-screen bg-stone-50 dark:bg-slate-950 overflow-hidden">
+            <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <AdminTopBar onMenuClick={() => setSidebarOpen(true)} />
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <AdminTopBar onMenuClick={() => setSidebarOpen(true)} />
 
-            <main className="flex-1 overflow-y-auto bg-stone-50 dark:bg-slate-950">
-              {children}
-            </main>
+              <main className="flex-1 overflow-y-auto bg-stone-50 dark:bg-slate-950">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
+        </AdminBranchProvider>
       </RoleGuard>
     </Authenticated>
   );

@@ -2,7 +2,8 @@
 
 import { Authenticated } from "@refinedev/core";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 import {
   ArrowLeft, Clock, Loader2, PlayCircle, StopCircle,
   CalendarClock, AlertCircle, Banknote, History, X,
@@ -72,14 +73,8 @@ function TabButton({
 }
 
 function ShiftsContent() {
-  const [branchId, setBranchId] = useState<number | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const { selectedBranchId: branchId, role } = useAdminBranch();
   const [tab, setTab] = useState<"current" | "history">("current");
-
-  useEffect(() => {
-    setBranchId(Number(localStorage.getItem("branch_id")) || null);
-    setRole(localStorage.getItem("user_role"));
-  }, []);
 
   const isManager = role === "manager" || role === "admin";
 

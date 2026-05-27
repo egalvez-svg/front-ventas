@@ -1,7 +1,8 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 import {
   Users,
   Plus,
@@ -72,14 +73,7 @@ export default function UsersPage() {
 
 function UsersContent() {
   const [search, setSearch] = useState("");
-  const [currentRole, setCurrentRole] = useState<string | null>(null);
-  const [currentBranchId, setCurrentBranchId] = useState<number | null>(null);
-
-  useEffect(() => {
-    setCurrentRole(localStorage.getItem("user_role"));
-    const bid = localStorage.getItem("branch_id");
-    if (bid) setCurrentBranchId(Number(bid));
-  }, []);
+  const { role: currentRole, selectedBranchId: currentBranchId } = useAdminBranch();
 
   const isAdmin = currentRole === "admin";
 

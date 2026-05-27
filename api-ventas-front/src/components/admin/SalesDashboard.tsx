@@ -22,6 +22,7 @@ import {
   useMonthlyTrendReport,
   type WeekdayPoint,
 } from "@/hooks/useReports";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
@@ -326,21 +327,16 @@ function WeekdayDonutChart({
 const TREND_DAYS = 30;
 
 export function SalesDashboard() {
-  const [branchId, setBranchId] = useState<number | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const { selectedBranchId, role } = useAdminBranch();
 
-  useEffect(() => {
-    setBranchId(Number(localStorage.getItem("branch_id")) || null);
-    setRole(localStorage.getItem("user_role"));
-    setReady(true);
-  }, []);
+  // When admin picks a specific branch, use branch-scoped endpoints (same as manager)
+  const effectiveRole = role === "admin" && selectedBranchId !== null ? "manager" : role;
 
-  const { data: lastShift, isLoading: loadingShift } = useLastShiftReport(role, branchId);
-  const { data: averages, isLoading: loadingAvg } = useAveragesReport(role, branchId, TREND_DAYS);
-  const { data: weekdays, isLoading: loadingWeekday } = useWeekdayReport(role, branchId, 90);
+  const { data: lastShift, isLoading: loadingShift } = useLastShiftReport(effectiveRole, selectedBranchId);
+  const { data: averages, isLoading: loadingAvg } = useAveragesReport(effectiveRole, selectedBranchId, TREND_DAYS);
+  const { data: weekdays, isLoading: loadingWeekday } = useWeekdayReport(effectiveRole, selectedBranchId, 90);
 
-  if (!ready) {
+  if (role === null) {
     return (
       <div className="flex items-center gap-3 text-stone-400 dark:text-slate-500 py-8 mb-10">
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -351,7 +347,7 @@ export function SalesDashboard() {
 
   let shiftSub = "Sin turno registrado";
   if (lastShift) {
-    if (role === "admin") {
+    if (effectiveRole === "admin") {
       shiftSub = `${lastShift.order_count} pedidos · todas las sucursales`;
     } else {
       const timeStr = lastShift.opened_at
@@ -375,7 +371,7 @@ export function SalesDashboard() {
           label="Última sesión"
           value={lastShift ? clpFull(lastShift.total_sales) : "—"}
           sub={shiftSub}
-          loading={!ready || loadingShift}
+          loading={loadingShift}
         />
         <StatCard
           icon={<CalendarDays className="w-5 h-5 text-sky-500 dark:text-sky-400" />}
@@ -405,7 +401,7 @@ export function SalesDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         <div className="lg:col-span-2">
-          <MonthlyTrendChart role={role} branchId={branchId} />
+          <MonthlyTrendChart role={effectiveRole} branchId={selectedBranchId} />
         </div>
         <WeekdayDonutChart weekdays={weekdays} loading={loadingWeekday} />
       </div>

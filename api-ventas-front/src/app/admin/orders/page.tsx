@@ -2,6 +2,7 @@
 
 import { Authenticated } from "@refinedev/core";
 import { useState, useMemo } from "react";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 import Link from "next/link";
 import { ClipboardList, ArrowLeft, Loader2, X, ChevronRight, Search } from "lucide-react";
 import {
@@ -47,17 +48,8 @@ export default function AdminOrdersPage() {
   );
 }
 
-function useBranchId() {
-  const [branchId] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    const id = localStorage.getItem("branch_id");
-    return id ? Number(id) : null;
-  });
-  return branchId;
-}
-
 function OrdersContent() {
-  const branchId = useBranchId();
+  const { selectedBranchId: branchId } = useAdminBranch();
   const [tab, setTab] = useState<FilterTab>("all");
   const [selected, setSelected] = useState<Order | null>(null);
   const [search, setSearch] = useState("");
