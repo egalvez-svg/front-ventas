@@ -24,6 +24,7 @@ export interface OrderItemPayload {
 export interface CreateOrderPayload {
   table_id: number | null;
   items: OrderItemPayload[];
+  coupon_code?: string;
 }
 
 export interface OrderItem {
@@ -134,6 +135,8 @@ export interface Invoice {
   subtotal: number;
   tip: number;
   total: number;
+  discount?: number;
+  coupon_code?: string;
   items: InvoiceItem[];
 }
 
@@ -224,14 +227,17 @@ export function useUpdateOrderStatus() {
       orderId,
       status,
       tip,
+      coupon_code,
     }: {
       branchId: number;
       orderId: number;
       status: OrderStatus;
       tip?: number;
+      coupon_code?: string;
     }) => {
       const body: Record<string, unknown> = { status };
       if (tip !== undefined && tip > 0) body.tip = tip;
+      if (coupon_code) body.coupon_code = coupon_code;
       const { data } = await apiClient.patch(
         `/branches/${branchId}/orders/${orderId}/status`,
         body

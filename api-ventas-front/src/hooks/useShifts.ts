@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import type { Order } from "@/hooks/useOrders";
 
 export interface Shift {
   id: number;
@@ -39,6 +40,19 @@ export function useCurrentShift(branchId: number | null) {
   });
 }
 
+export function useCurrentShiftOrders(branchId: number | null) {
+  return useQuery<Order[]>({
+    queryKey: [...qk(branchId), "current", "orders"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/branches/${branchId}/shifts/current/orders`);
+      return data;
+    },
+    enabled: branchId !== null,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useOpenShift() {
   const qc = useQueryClient();
   return useMutation({
@@ -68,5 +82,31 @@ export function useCloseShift() {
       toast.success("Turno cerrado correctamente");
     },
     onError: (err) => toast.error(apiError(err)),
+  });
+}
+
+export function useShifts(branchId: number | null, skip = 0, limit = 20) {
+  return useQuery<Shift[]>({
+    queryKey: [...qk(branchId), "history", skip, limit],
+    queryFn: async () => {
+      const { data } = await apiClient.get(
+        `/branches/${branchId}/shifts?skip=${skip}&limit=${limit}`
+      );
+      return data;
+    },
+    enabled: branchId !== null,
+  });
+}
+
+export function useShiftOrders(branchId: number | null, shiftId: number | null) {
+  return useQuery<Order[]>({
+    queryKey: [...qk(branchId), shiftId, "orders"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(
+        `/branches/${branchId}/shifts/${shiftId}/orders`
+      );
+      return data;
+    },
+    enabled: branchId !== null && shiftId !== null,
   });
 }

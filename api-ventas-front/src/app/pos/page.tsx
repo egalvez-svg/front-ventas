@@ -1,11 +1,11 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Store, Loader2, ShoppingCart, Plus, Minus, Trash2, Send, X,
   UtensilsCrossed, ChefHat, AlertTriangle, MessageSquare, ShoppingBag,
-  BellRing, CheckCircle2, Grid3x3,
+  BellRing, CheckCircle2, Grid3x3, ArrowLeft, Ticket,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { useTables, type Table, type TableStatus } from "@/hooks/useTables";
@@ -16,6 +16,7 @@ import {
   ACTIVE_STATUSES, type OrderItemPayload, type Order, type OrderStatus,
 } from "@/hooks/useOrders";
 import { useCurrentShift } from "@/hooks/useShifts";
+import { useValidateCoupon, type CouponValidation } from "@/hooks/useCoupons";
 
 interface CartItem {
   product: Product;
@@ -88,6 +89,10 @@ function POSContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TableStatus | "all">("all");
   const [showDeliveryPanel, setShowDeliveryPanel] = useState(false);
+  const [mobileView, setMobileView] = useState<"tables" | "order">("tables");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const { data: tables, isLoading: tablesLoading } = useTables(branchId);
   const { data: shift, isLoading: shiftLoading } = useCurrentShift(branchId);
@@ -95,6 +100,7 @@ function POSContent() {
   const { data: servedOrders } = useOrders(branchId, "served", 4_000);
   const createOrder = useCreateOrder();
   const updateStatus = useUpdateOrderStatus();
+  const validateCoupon = useValidateCoupon();
 
   const pendingPickups = useMemo(
     () => (servedOrders ?? []).filter((o) => o.table_id !== null),
@@ -147,9 +153,40 @@ function POSContent() {
     setCart([]);
     setSelectedTable(null);
     setIsDirect(false);
+    setMobileView("tables");
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
   };
 
   const total = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+  }, [total]);
+
+  const handleValidateCoupon = (code: string) => {
+    if (!branchId || !code.trim()) return;
+    setCouponError(null);
+    validateCoupon.mutate(
+      { branchId, code: code.trim().toUpperCase(), orderTotal: total },
+      {
+        onSuccess: (data) => setAppliedCoupon(data),
+        onError: (err: unknown) => {
+          setAppliedCoupon(null);
+          const e = err as { response?: { data?: { detail?: string } } };
+          setCouponError(e.response?.data?.detail || "Cupón inválido o no aplicable");
+        },
+      }
+    );
+  };
+
+  const handleClearCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
+  };
 
   const handleSubmit = () => {
     if (!branchId || (!selectedTable && !isDirect) || cart.length === 0) return;
@@ -159,7 +196,14 @@ function POSContent() {
       notes: i.notes || undefined,
     }));
     createOrder.mutate(
-      { branchId, payload: { table_id: selectedTable?.id ?? null, items } },
+      {
+        branchId,
+        payload: {
+          table_id: selectedTable?.id ?? null,
+          items,
+          coupon_code: appliedCoupon?.code,
+        },
+      },
       {
         onSuccess: (order) => {
           updateStatus.mutate(
@@ -176,6 +220,7 @@ function POSContent() {
     setSelectedTable(table);
     setIsDirect(false);
     setCart([]);
+    setMobileView("order");
   };
 
   const selectDirect = () => {
@@ -183,6 +228,7 @@ function POSContent() {
     setSelectedTable(null);
     setIsDirect(true);
     setCart([]);
+    setMobileView("order");
   };
 
   const filteredTables = useMemo(() => {
@@ -251,7 +297,7 @@ function POSContent() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Tables panel */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`flex-1 flex-col overflow-hidden ${mobileView === "order" ? "hidden lg:flex" : "flex"}`}>
           {/* Filter bar */}
           {tables && tables.length > 0 && (
             <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-stone-200 dark:border-slate-800/40 flex-shrink-0 flex-wrap">
@@ -366,7 +412,7 @@ function POSContent() {
         </div>
 
         {/* Order Sidebar */}
-        <aside className="w-80 xl:w-96 bg-white dark:bg-[#0c1020] border-l border-stone-200 dark:border-slate-800/70 flex flex-col flex-shrink-0">
+        <aside className={`bg-white dark:bg-[#0c1020] border-l border-stone-200 dark:border-slate-800/70 flex-col flex-shrink-0 lg:w-80 xl:w-96 ${mobileView === "tables" ? "hidden lg:flex" : "flex w-full"}`}>
           {selectedTable === null && !isDirect ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
               <div className="w-20 h-20 rounded-full bg-stone-200 dark:bg-slate-800/60 flex items-center justify-center">
@@ -393,6 +439,14 @@ function POSContent() {
                 onClear={clearCart}
                 onSubmit={handleSubmit}
                 isSubmitting={createOrder.isPending || updateStatus.isPending}
+                onBack={() => setMobileView("tables")}
+                couponCode={couponCode}
+                onCouponCodeChange={(code) => { setCouponCode(code); setCouponError(null); }}
+                appliedCoupon={appliedCoupon}
+                onValidateCoupon={handleValidateCoupon}
+                onClearCoupon={handleClearCoupon}
+                isValidatingCoupon={validateCoupon.isPending}
+                couponError={couponError}
               />
             </>
           )}
@@ -403,7 +457,8 @@ function POSContent() {
 }
 
 function OrderPanel({
-  table, cart, total, onAddProduct, onUpdateQty, onUpdateNotes, onRemove, onClear, onSubmit, isSubmitting,
+  table, cart, total, onAddProduct, onUpdateQty, onUpdateNotes, onRemove, onClear, onSubmit, isSubmitting, onBack,
+  couponCode, onCouponCodeChange, appliedCoupon, onValidateCoupon, onClearCoupon, isValidatingCoupon, couponError,
 }: {
   table: Table | null;
   cart: CartItem[];
@@ -415,6 +470,14 @@ function OrderPanel({
   onClear: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
+  onBack: () => void;
+  couponCode: string;
+  onCouponCodeChange: (code: string) => void;
+  appliedCoupon: CouponValidation | null;
+  onValidateCoupon: (code: string) => void;
+  onClearCoupon: () => void;
+  isValidatingCoupon: boolean;
+  couponError: string | null;
 }) {
   const branchId = useBranchId();
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -430,16 +493,24 @@ function OrderPanel({
     <>
       {/* Panel header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-stone-200 dark:border-slate-800/70">
-        <div>
-          <p className="text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-widest font-medium">Pedido activo</p>
-          {table ? (
-            <p className="font-bold text-stone-900 dark:text-white">Mesa {table.number}</p>
-          ) : (
-            <p className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-              <ShoppingBag className="w-3.5 h-3.5" />
-              Venta directa
-            </p>
-          )}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={onBack}
+            className="lg:hidden flex-shrink-0 p-1.5 -ml-1 text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <p className="text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-widest font-medium">Pedido activo</p>
+            {table ? (
+              <p className="font-bold text-stone-900 dark:text-white">Mesa {table.number}</p>
+            ) : (
+              <p className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                Venta directa
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {cart.length > 0 && (
@@ -515,12 +586,93 @@ function OrderPanel({
 
       {/* Footer / Submit */}
       <div className="p-4 border-t border-stone-200 dark:border-slate-800/70 flex-shrink-0 bg-stone-50/50 dark:bg-[#0a0e1a]/50">
-        {cart.length > 0 && (
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-stone-400 dark:text-slate-500 text-sm">Total</span>
-            <span className="font-black text-stone-900 dark:text-white text-lg">${total.toLocaleString("es-CL")}</span>
-          </div>
-        )}
+        {/* Cupón */}
+        {cart.length > 0 && (() => {
+          const discountAmt = appliedCoupon
+            ? (appliedCoupon.discount_amount ??
+                (appliedCoupon.discount_type === "percentage"
+                  ? Math.round(total * appliedCoupon.discount_value / 100)
+                  : appliedCoupon.discount_value))
+            : 0;
+          const finalTotal = appliedCoupon
+            ? (appliedCoupon.final_total ?? Math.max(0, total - discountAmt))
+            : total;
+
+          return (
+            <>
+              <div className="mb-3">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Ticket className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{appliedCoupon.code}</span>
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 truncate">
+                        −${discountAmt.toLocaleString("es-CL")}
+                      </span>
+                    </div>
+                    <button
+                      onClick={onClearCoupon}
+                      className="text-emerald-500 hover:text-emerald-300 transition-colors ml-2 flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Código de cupón"
+                      value={couponCode}
+                      onChange={(e) => onCouponCodeChange(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && couponCode.trim() && onValidateCoupon(couponCode)}
+                      disabled={isValidatingCoupon}
+                      className="flex-1 px-3 py-2 bg-stone-100 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-xl text-xs text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 font-mono tracking-wider disabled:opacity-50"
+                    />
+                    <button
+                      onClick={() => onValidateCoupon(couponCode)}
+                      disabled={!couponCode.trim() || isValidatingCoupon}
+                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1"
+                    >
+                      {isValidatingCoupon
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Ticket className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="mt-1.5 text-[11px] text-rose-500 dark:text-rose-400 pl-1">{couponError}</p>
+                )}
+              </div>
+
+              {/* Total */}
+              <div className="mb-3">
+                {appliedCoupon ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 dark:text-slate-500 text-xs">Subtotal</span>
+                      <span className="font-semibold text-stone-600 dark:text-slate-400 text-sm">${total.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-emerald-500 text-xs">Descuento</span>
+                      <span className="font-semibold text-emerald-500 text-sm">−${discountAmt.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-stone-200 dark:border-slate-800/70 pt-1.5">
+                      <span className="text-stone-500 dark:text-slate-400 text-sm">Total</span>
+                      <span className="font-black text-stone-900 dark:text-white text-lg">${finalTotal.toLocaleString("es-CL")}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-slate-500 text-sm">Total</span>
+                    <span className="font-black text-stone-900 dark:text-white text-lg">${total.toLocaleString("es-CL")}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+
         <button
           onClick={onSubmit}
           disabled={cart.length === 0 || isSubmitting}
