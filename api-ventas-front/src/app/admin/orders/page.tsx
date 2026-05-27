@@ -62,7 +62,8 @@ function OrdersContent() {
       (orders ?? []).filter(
         (o) =>
           String(o.id).includes(search) ||
-          String(o.table_number ?? o.table_id).includes(search)
+          String(o.table_number ?? o.table_id).includes(search) ||
+          o.waiter_name.toLowerCase().includes(search.toLowerCase())
       ),
     [orders, search]
   );
@@ -109,7 +110,7 @@ function OrdersContent() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
               <input
                 type="text"
-                placeholder="Buscar por mesa o #..."
+                placeholder="Buscar por #, mesa o mesero..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
@@ -153,6 +154,7 @@ function OrdersContent() {
                   <tr className="border-b border-stone-200 dark:border-slate-800 text-stone-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                     <th className="text-left px-6 py-4 font-medium">#</th>
                     <th className="text-left px-6 py-4 font-medium">Mesa</th>
+                    <th className="text-left px-6 py-4 font-medium">Mesero</th>
                     <th className="text-left px-6 py-4 font-medium">Estado</th>
                     <th className="text-left px-6 py-4 font-medium">Items</th>
                     <th className="text-left px-6 py-4 font-medium">Hora</th>
@@ -171,6 +173,9 @@ function OrdersContent() {
                         <td className="px-6 py-4 font-mono text-stone-500 dark:text-slate-400">#{order.id}</td>
                         <td className="px-6 py-4 font-bold text-stone-800 dark:text-slate-200">
                           Mesa {order.table_number ?? order.table_id}
+                        </td>
+                        <td className="px-6 py-4 text-stone-500 dark:text-slate-400">
+                          {order.waiter_name}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex px-2.5 py-1 rounded-lg border text-xs font-semibold ${cfg.classes}`}>
@@ -206,6 +211,9 @@ function OrdersContent() {
               <h2 className="text-xl font-bold text-stone-900 dark:text-white">Pedido #{selected.id}</h2>
               <p className="text-sm text-stone-500 dark:text-slate-400">
                 Mesa {selected.table_number ?? selected.table_id}
+              </p>
+              <p className="text-xs text-stone-400 dark:text-slate-500 mt-0.5">
+                {selected.waiter_name}
               </p>
             </div>
             <button

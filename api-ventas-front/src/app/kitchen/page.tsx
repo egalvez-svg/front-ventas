@@ -2,7 +2,7 @@
 
 import { Authenticated } from "@refinedev/core";
 import { useState, useEffect, useMemo } from "react";
-import { ChefHat, Loader2, RefreshCw, CheckCircle2, Clock, Store, AlertTriangle, MessageSquare, BellRing } from "lucide-react";
+import { ChefHat, Loader2, RefreshCw, CheckCircle2, Clock, Store, AlertTriangle, MessageSquare, BellRing, User } from "lucide-react";
 import { useKitchenOrders, useOrders, useUpdateOrderStatus, type Order } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
 import { AppHeader } from "@/components/AppHeader";
@@ -258,6 +258,12 @@ function OrderCard({
         </div>
       </div>
 
+      {/* Waiter */}
+      <div className="px-4 py-1.5 border-b border-stone-200/80 dark:border-white/5 flex items-center gap-1.5">
+        <User className="w-2.5 h-2.5 text-stone-400 dark:text-slate-600 flex-shrink-0" />
+        <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium truncate">{order.waiter_name}</p>
+      </div>
+
       {/* Status badge */}
       <div className="px-4 py-2 border-b border-stone-200/80 dark:border-white/5">
         <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${styles.badgeColor}`}>
@@ -326,6 +332,11 @@ function ReadyCard({
             {order.table_number ?? order.table_id}
           </p>
         </div>
+      </div>
+
+      <div className="px-4 py-1.5 border-b border-stone-200/80 dark:border-white/5 flex items-center gap-1.5">
+        <User className="w-2.5 h-2.5 text-stone-400 dark:text-slate-600 flex-shrink-0" />
+        <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium truncate">{order.waiter_name}</p>
       </div>
 
       <div className="px-4 py-2 border-b border-stone-200/80 dark:border-white/5">

@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Store, Loader2, ShoppingCart, Plus, Minus, Trash2, Send, X,
   UtensilsCrossed, ChefHat, AlertTriangle, MessageSquare, ShoppingBag,
-  BellRing, CheckCircle2, Grid3x3, ArrowLeft, Ticket,
+  BellRing, CheckCircle2, Grid3x3, ArrowLeft, Ticket, User,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { useTables, type Table, type TableStatus } from "@/hooks/useTables";
@@ -799,11 +799,15 @@ function TableActiveOrders({ orders }: { orders: Order[] }) {
       <div className="max-h-52 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-800/50">
         {orders.map((order) => (
           <div key={order.id} className="px-4 py-2.5">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[order.status]}`} />
               <span className="text-xs font-bold text-stone-700 dark:text-slate-300">Pedido #{order.id}</span>
               <span className="text-[10px] text-stone-400 dark:text-slate-500 ml-auto">{STATUS_LABEL[order.status]}</span>
             </div>
+            <p className="flex items-center gap-1 text-[10px] text-stone-400 dark:text-slate-600 mb-1.5">
+              <User className="w-2.5 h-2.5 flex-shrink-0" />
+              {order.waiter_name}
+            </p>
             <div className="space-y-0.5">
               {order.items.map((item, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
@@ -876,13 +880,17 @@ function DeliveryPanel({
               .map((order) => (
                 <div key={order.id} className="px-5 py-4 flex items-start gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-bold text-stone-500 dark:text-slate-400 uppercase tracking-wider">Mesa</span>
                       <span className="text-xl font-black text-stone-900 dark:text-white leading-none">
                         {order.table_number ?? order.table_id}
                       </span>
                       <span className="text-xs text-stone-400 dark:text-slate-600">· Pedido #{order.id}</span>
                     </div>
+                    <p className="flex items-center gap-1 text-[10px] text-stone-400 dark:text-slate-600 mb-2">
+                      <User className="w-2.5 h-2.5 flex-shrink-0" />
+                      {order.waiter_name}
+                    </p>
                     <div className="space-y-1">
                       {order.items.map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
