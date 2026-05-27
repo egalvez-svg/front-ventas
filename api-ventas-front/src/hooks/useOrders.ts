@@ -41,6 +41,8 @@ export interface Order {
   id: number;
   table_id: number | null;
   table_number?: number;
+  user_id: number;
+  waiter_name: string;
   status: OrderStatus;
   items: OrderItem[];
   created_at: string;

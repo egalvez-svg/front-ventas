@@ -2,8 +2,9 @@
 
 import { Authenticated } from "@refinedev/core";
 import { useState, useMemo } from "react";
-import { Grid3x3, Plus, Pencil, Trash2, Loader2, X, Search } from "lucide-react";
+import { Grid3x3, Plus, Pencil, Trash2, Loader2, X, Search, User } from "lucide-react";
 import { useTables, useCreateTable, useUpdateTable, useDeleteTable, type Table, type TablePayload } from "@/hooks/useTables";
+import { useOrders, ACTIVE_STATUSES } from "@/hooks/useOrders";
 import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 
@@ -33,6 +34,18 @@ function TablesContent() {
   const [search, setSearch] = useState("");
 
   const { data: tables, isLoading: tablesLoading, isError } = useTables(selectedBranchId);
+  const { data: activeOrders } = useOrders(selectedBranchId);
+
+  const tableWaiters = useMemo<Record<number, string>>(() => {
+    if (!activeOrders) return {};
+    const map: Record<number, string> = {};
+    for (const order of activeOrders) {
+      if (order.table_id !== null && ACTIVE_STATUSES.includes(order.status)) {
+        map[order.table_id] = order.waiter_name;
+      }
+    }
+    return map;
+  }, [activeOrders]);
 
   const filteredTables = useMemo(
     () => (tables ?? []).filter((t) => String(t.number).toLowerCase().includes(search.toLowerCase())),
@@ -166,6 +179,12 @@ function TablesContent() {
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${cfg.badge}`}>
                         {cfg.label}
                       </span>
+                      {table.status === 'occupied' && tableWaiters[table.id] && (
+                        <p className="flex items-center gap-1 text-[10px] text-stone-400 dark:text-slate-500 font-medium max-w-full truncate">
+                          <User className="w-2.5 h-2.5 flex-shrink-0" />
+                          {tableWaiters[table.id]}
+                        </p>
+                      )}
                     </div>
 
                     {/* Action bar */}
