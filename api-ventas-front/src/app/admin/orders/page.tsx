@@ -1,9 +1,9 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ClipboardList, ArrowLeft, Loader2, X, ChevronRight } from "lucide-react";
+import { ClipboardList, ArrowLeft, Loader2, X, ChevronRight, Search } from "lucide-react";
 import {
   useOrders,
   useUpdateOrderStatus,
@@ -60,9 +60,20 @@ function OrdersContent() {
   const branchId = useBranchId();
   const [tab, setTab] = useState<FilterTab>("all");
   const [selected, setSelected] = useState<Order | null>(null);
+  const [search, setSearch] = useState("");
 
   const status = tab === "all" ? undefined : tab;
   const { data: orders, isLoading, isError } = useOrders(branchId, status);
+
+  const filteredOrders = useMemo(
+    () =>
+      (orders ?? []).filter(
+        (o) =>
+          String(o.id).includes(search) ||
+          String(o.table_number ?? o.table_id).includes(search)
+      ),
+    [orders, search]
+  );
   const updateStatus = useUpdateOrderStatus();
 
   const handleStatusChange = (order: Order, newStatus: OrderStatus) => {
@@ -101,6 +112,18 @@ function OrdersContent() {
         </div>
       ) : (
         <>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
+              <input
+                type="text"
+                placeholder="Buscar por mesa o #..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
+              />
+            </div>
+          </div>
           <div className="flex gap-1.5 mb-6 flex-wrap">
             {tabs.map(({ key, label }) => (
               <button
@@ -127,13 +150,10 @@ function OrdersContent() {
                 <X className="w-10 h-10 text-rose-500/50" />
                 <p>Error al cargar los pedidos</p>
               </div>
-            ) : !orders?.length ? (
+            ) : !filteredOrders.length ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400 dark:text-slate-500">
                 <ClipboardList className="w-10 h-10 opacity-30" />
-                <p>
-                  No hay pedidos
-                  {tab !== "all" ? ` con estado "${STATUS_CONFIG[tab as OrderStatus]?.label}"` : ""}
-                </p>
+                <p>{search ? "Sin resultados" : `No hay pedidos${tab !== "all" ? ` con estado "${STATUS_CONFIG[tab as OrderStatus]?.label}"` : ""}`}</p>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -148,7 +168,7 @@ function OrdersContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-slate-800/50">
-                  {orders.map((order) => {
+                  {filteredOrders.map((order) => {
                     const cfg = STATUS_CONFIG[order.status];
                     return (
                       <tr

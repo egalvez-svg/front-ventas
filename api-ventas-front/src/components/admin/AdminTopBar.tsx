@@ -16,10 +16,10 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin:   "text-rose-500 dark:text-rose-400 border-rose-400/30 dark:border-rose-500/30 bg-rose-500/8 dark:bg-rose-500/10",
+  admin: "text-rose-500 dark:text-rose-400 border-rose-400/30 dark:border-rose-500/30 bg-rose-500/8 dark:bg-rose-500/10",
   manager: "text-violet-500 dark:text-violet-400 border-violet-400/30 dark:border-violet-500/30 bg-violet-500/8 dark:bg-violet-500/10",
   cashier: "text-cyan-500 dark:text-cyan-400 border-cyan-400/30 dark:border-cyan-500/30 bg-cyan-500/8 dark:bg-cyan-500/10",
-  waiter:  "text-emerald-500 dark:text-emerald-400 border-emerald-400/30 dark:border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-500/10",
+  waiter: "text-emerald-500 dark:text-emerald-400 border-emerald-400/30 dark:border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-500/10",
   kitchen: "text-amber-500 dark:text-amber-400 border-amber-400/30 dark:border-amber-500/30 bg-amber-500/8 dark:bg-amber-500/10",
 };
 

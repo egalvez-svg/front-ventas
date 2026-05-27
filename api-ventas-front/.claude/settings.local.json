@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git restore *)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git push *)"
     ]
   }
 }

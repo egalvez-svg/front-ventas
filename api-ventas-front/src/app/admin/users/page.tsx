@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Users,
   Plus,
@@ -14,6 +14,7 @@ import {
   Pencil,
   Trash2,
   Building2,
+  Search,
 } from "lucide-react";
 
 import {
@@ -70,8 +71,18 @@ export default function UsersPage() {
 }
 
 function UsersContent() {
+  const [search, setSearch] = useState("");
   const { data: users, isLoading, isError } = useUsers();
   const { data: branches = [] } = useBranches();
+
+  const filteredUsers = useMemo(
+    () => (users ?? []).filter(
+      (u) =>
+        u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+    ),
+    [users, search]
+  );
 
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
@@ -159,6 +170,18 @@ function UsersContent() {
       </div>
 
       <div className="p-6">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
+            <input
+              type="text"
+              placeholder="Buscar usuario..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
+            />
+          </div>
+        </div>
         <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -169,10 +192,10 @@ function UsersContent() {
               <XCircle className="w-10 h-10 text-rose-500/50" />
               <p>Error al cargar los usuarios</p>
             </div>
-          ) : !users?.length ? (
+          ) : !filteredUsers.length ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400 dark:text-slate-500">
               <UserIcon className="w-10 h-10 opacity-30" />
-              <p>No hay usuarios registrados</p>
+              <p>{search ? "Sin resultados" : "No hay usuarios registrados"}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -187,7 +210,7 @@ function UsersContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-slate-800/50">
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-stone-50 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">

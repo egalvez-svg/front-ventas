@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   ShoppingBag,
   Plus,
@@ -14,6 +14,7 @@ import {
   XCircle,
   PlusCircle,
   MinusCircle,
+  Search,
 } from "lucide-react";
 import {
   useProducts,
@@ -29,13 +30,14 @@ import {
 } from "@/hooks/useProducts";
 import { useCategories, type Category } from "@/hooks/useCategories";
 import { useIngredients, type Ingredient } from "@/hooks/useIngredients";
-import { useBranches } from "@/hooks/useBranches";
+import { useAdminBranchSelect } from "@/hooks/useAdminBranchSelect";
 
 type Modal =
   | { mode: "closed" }
   | { mode: "create" }
   | { mode: "edit"; item: Product }
   | { mode: "deactivate"; item: Product }
+  | { mode: "confirm-recipe"; item: Product }
   | { mode: "recipe"; item: Product };
 
 const EMPTY_FORM: ProductPayload = {
@@ -62,17 +64,16 @@ export default function ProductsPage() {
 }
 
 function ProductsContent() {
-  const { data: branches, isLoading: branchesLoading } = useBranches();
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const { branches, selectedBranchId, setSelectedBranchId, isLoading: branchesLoading, isManager } = useAdminBranchSelect();
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (branches?.length && selectedBranchId === null) {
-      setSelectedBranchId(branches[0].id);
-    }
-  }, [branches, selectedBranchId]);
-
-  const [filters, setFilters] = useState<ProductsParams>({ active_only: true });
+  const [filters, setFilters] = useState<ProductsParams>({});
   const { data: products, isLoading, isError } = useProducts(selectedBranchId, filters);
+
+  const filteredProducts = useMemo(
+    () => (products ?? []).filter((p) => p.name.toLowerCase().includes(search.toLowerCase())),
+    [products, search]
+  );
   const { data: categories = [] } = useCategories(selectedBranchId);
   const { data: ingredients = [] } = useIngredients(selectedBranchId);
 
@@ -130,7 +131,13 @@ function ProductsContent() {
       category_id: Number(form.category_id),
     };
     if (modal.mode === "create") {
-      createProduct.mutate({ branchId: selectedBranchId, payload }, { onSuccess: close, onError: handleApiError });
+      createProduct.mutate(
+        { branchId: selectedBranchId, payload },
+        {
+          onSuccess: (created) => setModal({ mode: "confirm-recipe", item: created }),
+          onError: handleApiError,
+        }
+      );
     } else if (modal.mode === "edit") {
       updateProduct.mutate({ branchId: selectedBranchId, id: modal.item.id, payload }, { onSuccess: close, onError: handleApiError });
     }
@@ -153,17 +160,23 @@ function ProductsContent() {
           <h1 className="text-base font-bold text-stone-900 dark:text-white">Productos</h1>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={selectedBranchId || ""}
-            onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-            className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-          >
-            {!branches?.length && branchesLoading ? (
-              <option>Cargando...</option>
-            ) : (
-              branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
-            )}
-          </select>
+          {isManager ? (
+            <span className="px-3 py-1.5 text-sm font-medium text-stone-700 dark:text-slate-200 bg-stone-100 dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-xl">
+              {branches?.[0]?.name ?? "—"}
+            </span>
+          ) : (
+            <select
+              value={selectedBranchId || ""}
+              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+              className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+            >
+              {!branches?.length && branchesLoading ? (
+                <option>Cargando...</option>
+              ) : (
+                branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
+              )}
+            </select>
+          )}
           <button
             onClick={openCreate}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 text-sm shadow-md shadow-amber-500/20"
@@ -177,6 +190,16 @@ function ProductsContent() {
       <div className="p-6">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
+          <input
+            type="text"
+            placeholder="Buscar producto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
+          />
+        </div>
         <select
           value={filters.category_id ?? ""}
           onChange={(e) =>
@@ -185,29 +208,13 @@ function ProductsContent() {
               category_id: e.target.value === "" ? undefined : Number(e.target.value),
             }))
           }
-          className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+          className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
         >
           <option value="">Todas las categorías</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
-
-        <button
-          onClick={() => setFilters((p) => ({ ...p, active_only: !p.active_only }))}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-            filters.active_only
-              ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-              : "bg-white dark:bg-slate-900 border-stone-300 dark:border-slate-700 text-stone-500 dark:text-slate-400"
-          }`}
-        >
-          {filters.active_only ? (
-            <CheckCircle2 className="w-4 h-4" />
-          ) : (
-            <XCircle className="w-4 h-4" />
-          )}
-          {filters.active_only ? "Solo activos" : "Todos (incl. inactivos)"}
-        </button>
       </div>
 
       {/* Table */}
@@ -221,10 +228,10 @@ function ProductsContent() {
             <XCircle className="w-10 h-10 text-rose-500/50" />
             <p>Error al cargar los productos</p>
           </div>
-        ) : !products?.length ? (
+        ) : !filteredProducts.length ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400 dark:text-slate-500">
             <ShoppingBag className="w-10 h-10 opacity-30" />
-            <p>No hay productos con los filtros actuales</p>
+            <p>{search ? "Sin resultados" : "No hay productos registrados"}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -238,7 +245,7 @@ function ProductsContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-slate-800/50">
-              {products.map((prod) => (
+              {filteredProducts.map((prod) => (
                 <tr
                   key={prod.id}
                   className={`hover:bg-stone-50 dark:hover:bg-slate-800/30 transition-colors ${
@@ -448,6 +455,37 @@ function ProductsContent() {
                 ) : (
                   "Desactivar"
                 )}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* Confirm Recipe after Create */}
+      {modal.mode === "confirm-recipe" && (
+        <ModalOverlay onClose={close}>
+          <div className="text-center">
+            <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-7 h-7 text-amber-500" />
+            </div>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2">¿Tiene receta?</h2>
+            <p className="text-stone-500 dark:text-slate-400 text-sm mb-6">
+              <span className="text-stone-900 dark:text-white font-semibold">{modal.item.name}</span> fue creado exitosamente.
+              ¿Deseas agregar su receta ahora?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={close}
+                className="flex-1 py-3 rounded-xl border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                No, omitir
+              </button>
+              <button
+                onClick={() => setModal({ mode: "recipe", item: modal.item })}
+                className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                Sí, agregar receta
               </button>
             </div>
           </div>

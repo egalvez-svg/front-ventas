@@ -24,7 +24,7 @@ export default function CashierPage() {
     <Authenticated
       key="cashier-page"
       loading={
-        <div className="min-h-screen bg-[#080c18] flex items-center justify-center">
+        <div className="min-h-screen bg-stone-50 dark:bg-[#080c18] flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
         </div>
       }
@@ -74,7 +74,7 @@ function CashierContent() {
   const count = orders?.length ?? 0;
 
   return (
-    <div className="h-screen bg-[#080c18] text-slate-50 flex flex-col">
+    <div className="h-screen bg-stone-50 dark:bg-[#080c18] text-stone-900 dark:text-slate-50 flex flex-col">
       <AppHeader
         icon={<Receipt className="w-5 h-5 text-emerald-400" />}
         title="Caja"
@@ -82,12 +82,12 @@ function CashierContent() {
         actions={
           <div className="flex items-center gap-2">
             {count > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-bold">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 font-bold">
                 <DollarSign className="w-3.5 h-3.5" />
                 {count} listo{count !== 1 ? "s" : ""} para cobrar
               </div>
             )}
-            {isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />}
+            {isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-stone-400 dark:text-slate-500" />}
           </div>
         }
       />
@@ -95,9 +95,9 @@ function CashierContent() {
       <main className="flex-1 overflow-y-auto p-5">
         {branchId === null ? (
           <div className="flex items-center justify-center h-full">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm text-center">
-              <Store className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">Tu cuenta no tiene una sucursal asignada.</p>
+            <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl p-8 max-w-sm text-center">
+              <Store className="w-10 h-10 text-stone-400 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-stone-500 dark:text-slate-400 text-sm">Tu cuenta no tiene una sucursal asignada.</p>
             </div>
           </div>
         ) : isLoading ? (
@@ -105,17 +105,17 @@ function CashierContent() {
             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
           </div>
         ) : isError ? (
-          <div className="flex items-center justify-center h-full text-slate-500">
+          <div className="flex items-center justify-center h-full text-stone-400 dark:text-slate-500">
             <p>Error al cargar los pedidos</p>
           </div>
         ) : !orders?.length ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-700">
-            <div className="w-24 h-24 rounded-full bg-slate-900/60 flex items-center justify-center">
-              <Receipt className="w-12 h-12 opacity-40" />
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="w-24 h-24 rounded-full bg-stone-200 dark:bg-slate-900/60 flex items-center justify-center">
+              <Receipt className="w-12 h-12 text-stone-400 dark:text-slate-700 opacity-40" />
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-slate-500">Sin pedidos para cobrar</p>
-              <p className="text-sm text-slate-600 mt-1">Los pedidos servidos aparecerán aquí</p>
+              <p className="text-lg font-semibold text-stone-500 dark:text-slate-500">Sin pedidos para cobrar</p>
+              <p className="text-sm text-stone-400 dark:text-slate-600 mt-1">Los pedidos servidos aparecerán aquí</p>
             </div>
           </div>
         ) : (
@@ -186,18 +186,18 @@ function OrderCard({
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Pedido</p>
-          <p className="text-2xl font-black text-white leading-none">#{order.id}</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Pedido</p>
+          <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">#{order.id}</p>
         </div>
         {isDirect ? (
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs text-amber-400 font-bold">Llevar</span>
+            <ShoppingBag className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">Llevar</span>
           </div>
         ) : (
           <div className="text-right">
-            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">Mesa</p>
-            <p className="text-2xl font-black text-white leading-none">
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-slate-600">Mesa</p>
+            <p className="text-2xl font-black text-stone-900 dark:text-white leading-none">
               {order.table_number ?? order.table_id}
             </p>
           </div>
@@ -207,21 +207,21 @@ function OrderCard({
       <div className="space-y-1">
         {order.items.map((item, i) => (
           <div key={i} className="flex items-center gap-2 text-sm">
-            <span className="font-bold text-sky-400">×{item.quantity}</span>
-            <span className="text-slate-300 truncate">
+            <span className="font-bold text-sky-500 dark:text-sky-400">×{item.quantity}</span>
+            <span className="text-stone-700 dark:text-slate-300 truncate">
               {item.product_name ?? productMap[item.product_id] ?? `Producto #${item.product_id}`}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+      <div className="flex items-center justify-between pt-2 border-t border-stone-200 dark:border-white/5">
         {order.total != null ? (
-          <span className="font-black text-white">${order.total.toLocaleString("es-CL")}</span>
+          <span className="font-black text-stone-900 dark:text-white">${order.total.toLocaleString("es-CL")}</span>
         ) : (
-          <span className="text-slate-600 text-sm">—</span>
+          <span className="text-stone-400 dark:text-slate-600 text-sm">—</span>
         )}
-        <span className="text-xs text-slate-500">{time}</span>
+        <span className="text-xs text-stone-400 dark:text-slate-500">{time}</span>
       </div>
     </button>
   );
@@ -278,23 +278,23 @@ function CheckoutModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-6 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-3xl shadow-2xl p-6 max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5 flex-shrink-0">
           <div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Cobro</p>
-            <h2 className="text-xl font-bold text-white">Pedido #{order.id}</h2>
+            <p className="text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-widest">Cobro</p>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white">Pedido #{order.id}</h2>
             {order.table_id != null ? (
-              <p className="text-sm text-slate-400">Mesa {order.table_number ?? order.table_id}</p>
+              <p className="text-sm text-stone-500 dark:text-slate-400">Mesa {order.table_number ?? order.table_id}</p>
             ) : (
-              <p className="text-sm text-amber-400 flex items-center gap-1">
+              <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <ShoppingBag className="w-3.5 h-3.5" />
                 Venta directa / Llevar
               </p>
             )}
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
+          <button onClick={onClose} className="text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -314,7 +314,7 @@ function CheckoutModal({
 
         {/* Tip selector */}
         <div className="mt-5 space-y-2.5 flex-shrink-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Propina sugerida</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Propina sugerida</p>
           <div className="grid grid-cols-4 gap-2">
             {TIP_OPTIONS.map((opt) => (
               <button
@@ -323,7 +323,7 @@ function CheckoutModal({
                 className={`py-2 rounded-xl text-xs font-bold transition-all ${
                   tipPercent === opt.value
                     ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                    : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                    : "bg-stone-100 dark:bg-slate-800 text-stone-500 dark:text-slate-400 hover:bg-stone-200 dark:hover:bg-slate-700 hover:text-stone-700 dark:hover:text-slate-200"
                 }`}
               >
                 {opt.label}
@@ -332,8 +332,8 @@ function CheckoutModal({
           </div>
           {tipPercent > 0 && (
             <div className="flex items-center justify-between text-sm px-1">
-              <span className="text-slate-500">Propina ({tipPercent}%)</span>
-              <span className="text-emerald-400 font-semibold">
+              <span className="text-stone-400 dark:text-slate-500">Propina ({tipPercent}%)</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                 +${tipAmount.toLocaleString("es-CL")}
               </span>
             </div>
@@ -341,9 +341,9 @@ function CheckoutModal({
         </div>
 
         {/* Grand total */}
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-700 flex-shrink-0">
-          <span className="text-slate-300 font-semibold">Total a cobrar</span>
-          <span className="text-3xl font-black text-white">${grandTotal.toLocaleString("es-CL")}</span>
+        <div className="flex items-center justify-between mt-5 pt-4 border-t border-stone-200 dark:border-slate-700 flex-shrink-0">
+          <span className="text-stone-700 dark:text-slate-300 font-semibold">Total a cobrar</span>
+          <span className="text-3xl font-black text-stone-900 dark:text-white">${grandTotal.toLocaleString("es-CL")}</span>
         </div>
 
         {/* Pay button */}
@@ -362,7 +362,7 @@ function CheckoutModal({
         {siblingCount > 0 && (
           <button
             onClick={onPayTable}
-            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-violet-500/40 text-violet-400 text-xs font-bold hover:bg-violet-500/10 transition-all active:scale-[0.98]"
+            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-violet-500/40 text-violet-600 dark:text-violet-400 text-xs font-bold hover:bg-violet-500/10 transition-all active:scale-[0.98]"
           >
             <Users className="w-3.5 h-3.5" />
             Cobrar mesa completa ({siblingCount + 1} pedidos)
@@ -495,21 +495,21 @@ function InvoiceItems({ invoice }: { invoice: Invoice }) {
   return (
     <div className="space-y-2">
       {invoice.items.map((item, i) => (
-        <div key={i} className="bg-slate-800/50 rounded-xl px-4 py-3 flex items-start justify-between gap-4">
+        <div key={i} className="bg-stone-100 dark:bg-slate-800/50 rounded-xl px-4 py-3 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="font-medium text-slate-200 text-sm leading-tight">{item.product_name}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="font-medium text-stone-800 dark:text-slate-200 text-sm leading-tight">{item.product_name}</p>
+            <p className="text-xs text-stone-400 dark:text-slate-500 mt-0.5">
               ×{item.quantity} · ${item.price.toLocaleString("es-CL")} c/u
             </p>
           </div>
-          <p className="font-bold text-white text-sm flex-shrink-0">
+          <p className="font-bold text-stone-900 dark:text-white text-sm flex-shrink-0">
             ${item.subtotal.toLocaleString("es-CL")}
           </p>
         </div>
       ))}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-700/60 px-1">
-        <span className="text-slate-400 text-sm">Subtotal</span>
-        <span className="font-black text-white text-lg">${invoice.subtotal.toLocaleString("es-CL")}</span>
+      <div className="flex items-center justify-between pt-2 border-t border-stone-200 dark:border-slate-700/60 px-1">
+        <span className="text-stone-500 dark:text-slate-400 text-sm">Subtotal</span>
+        <span className="font-black text-stone-900 dark:text-white text-lg">${invoice.subtotal.toLocaleString("es-CL")}</span>
       </div>
     </div>
   );
@@ -519,15 +519,15 @@ function FallbackItems({ order }: { order: Order }) {
   return (
     <div className="space-y-2">
       {order.items.map((item, i) => (
-        <div key={i} className="bg-slate-800/50 rounded-xl px-4 py-3 flex items-start justify-between gap-4">
+        <div key={i} className="bg-stone-100 dark:bg-slate-800/50 rounded-xl px-4 py-3 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="font-medium text-slate-200 text-sm">{item.product_name}</p>
-            {item.notes && <p className="text-xs text-slate-500 mt-0.5">{item.notes}</p>}
+            <p className="font-medium text-stone-800 dark:text-slate-200 text-sm">{item.product_name}</p>
+            {item.notes && <p className="text-xs text-stone-400 dark:text-slate-500 mt-0.5">{item.notes}</p>}
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="font-bold text-white">×{item.quantity}</p>
+            <p className="font-bold text-stone-900 dark:text-white">×{item.quantity}</p>
             {item.unit_price > 0 && (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-400 dark:text-slate-400">
                 ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
               </p>
             )}
@@ -535,9 +535,9 @@ function FallbackItems({ order }: { order: Order }) {
         </div>
       ))}
       {order.total != null && order.total > 0 && (
-        <div className="flex items-center justify-between pt-2 border-t border-slate-700/60 px-1">
-          <span className="text-slate-400 text-sm">Subtotal</span>
-          <span className="font-black text-white text-lg">${order.total.toLocaleString("es-CL")}</span>
+        <div className="flex items-center justify-between pt-2 border-t border-stone-200 dark:border-slate-700/60 px-1">
+          <span className="text-stone-500 dark:text-slate-400 text-sm">Subtotal</span>
+          <span className="font-black text-stone-900 dark:text-white text-lg">${order.total.toLocaleString("es-CL")}</span>
         </div>
       )}
     </div>

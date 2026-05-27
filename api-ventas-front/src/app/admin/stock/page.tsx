@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated } from "@refinedev/core";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Package,
   Search,
@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useStock, useUpdateStock, type StockItem } from "@/hooks/useStock";
-import { useBranches } from "@/hooks/useBranches";
+import { useAdminBranchSelect } from "@/hooks/useAdminBranchSelect";
 
 
 export default function StockPage() {
@@ -31,18 +31,10 @@ export default function StockPage() {
 }
 
 function StockContent() {
-  const { data: branches, isLoading: branchesLoading } = useBranches();
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const { branches, selectedBranchId, setSelectedBranchId, isLoading: branchesLoading, isManager } = useAdminBranchSelect();
   const [search, setSearch] = useState("");
-  const [criticalOnly, setCriticalOnly] = useState(false);
 
-  useEffect(() => {
-    if (branches?.length && selectedBranchId === null) {
-      setSelectedBranchId(branches[0].id);
-    }
-  }, [branches, selectedBranchId]);
-
-  const { data: stock, isLoading: stockLoading, isError } = useStock(selectedBranchId, criticalOnly);
+  const { data: stock, isLoading: stockLoading, isError } = useStock(selectedBranchId);
   const updateStock = useUpdateStock();
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -77,55 +69,45 @@ function StockContent() {
           <Package className="w-5 h-5 text-amber-500" />
           <h1 className="text-base font-bold text-stone-900 dark:text-white">Gestión de Stock</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedBranchId || ""}
-            onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-            className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-          >
-            {!branches?.length && branchesLoading ? (
-              <option>Cargando...</option>
-            ) : (
-              branches?.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))
-            )}
-          </select>
-          <button
-            onClick={() => setCriticalOnly(!criticalOnly)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm transition-all ${criticalOnly
-              ? "bg-rose-500/20 border-rose-500 text-rose-500 dark:text-rose-400"
-              : "bg-stone-100 dark:bg-slate-900 border-stone-300 dark:border-slate-700 text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200"
-              }`}
-          >
-            <AlertTriangle className="w-4 h-4" />
-            Solo Críticos
-          </button>
+        <div className="flex items-center gap-2">
+          {isManager ? (
+            <span className="px-3 py-1.5 text-sm font-medium text-stone-700 dark:text-slate-200 bg-stone-100 dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-xl">
+              {branches?.[0]?.name ?? "—"}
+            </span>
+          ) : (
+            <select
+              value={selectedBranchId || ""}
+              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+              className="appearance-none bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm text-stone-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+            >
+              {!branches?.length && branchesLoading ? (
+                <option>Cargando...</option>
+              ) : (
+                branches?.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))
+              )}
+            </select>
+          )}
         </div>
       </div>
 
       <div className="p-6">
-        {/* Search and Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-          <div className="lg:col-span-3 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 dark:text-slate-500" />
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Buscar ingrediente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+              className="pl-9 pr-4 py-1.5 bg-stone-100 dark:bg-slate-900 border border-stone-300 dark:border-slate-700 rounded-xl text-sm text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all w-56"
             />
-          </div>
-
-          <div className="bg-white dark:bg-slate-900/50 border border-stone-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-            <span className="text-stone-400 dark:text-slate-400 text-sm">Total ítems</span>
-            <span className="text-xl font-bold">{stock?.length || 0}</span>
           </div>
         </div>
 
         {/* Stock Table */}
-        <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-hidden">
           {stockLoading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
