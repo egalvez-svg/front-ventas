@@ -20,6 +20,8 @@ import {
   ShieldCheck,
   X,
   DollarSign,
+  Ticket,
+  TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -67,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/products", icon: <ShoppingBag className="w-4 h-4" />, label: "Productos" },
       { href: "/admin/stock", icon: <Package className="w-4 h-4" />, label: "Stock" },
       { href: "/admin/tables", icon: <Grid3x3 className="w-4 h-4" />, label: "Mesas" },
+      { href: "/admin/coupons", icon: <Ticket className="w-4 h-4" />, label: "Cupones" },
     ],
   },
   {
@@ -75,6 +78,12 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/orders", icon: <ClipboardList className="w-4 h-4" />, label: "Pedidos" },
       { href: "/admin/shifts", icon: <Clock className="w-4 h-4" />, label: "Turnos" },
       { href: "/admin/branches", icon: <Building2 className="w-4 h-4" />, label: "Sucursales" },
+    ],
+  },
+  {
+    title: "Reportes",
+    items: [
+      { href: "/admin/reports/top-products", icon: <TrendingUp className="w-4 h-4" />, label: "Top Productos" },
     ],
   },
   {

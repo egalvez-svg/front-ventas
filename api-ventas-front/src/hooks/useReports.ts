@@ -227,3 +227,29 @@ export function useMonthlyTrendReport(
     enabled: role !== null && (isAdmin || branchId !== null),
   });
 }
+
+export interface TopProduct {
+  rank: number;
+  product_id: number;
+  product_name: string;
+  total_quantity: number;
+  total_revenue: number;
+  order_count: number;
+}
+
+export function useTopProductsReport(
+  branchId: number | null,
+  days = 30,
+  limit = 10
+) {
+  return useQuery<TopProduct[]>({
+    queryKey: ["reports", "top-products", branchId, days, limit],
+    queryFn: async () => {
+      const { data } = await apiClient.get<TopProduct[]>(
+        `/branches/${branchId}/reports/top-products?days=${days}&limit=${limit}`
+      );
+      return data;
+    },
+    enabled: branchId !== null,
+  });
+}
