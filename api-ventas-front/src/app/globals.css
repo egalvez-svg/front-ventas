@@ -6,3 +6,27 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+@media print {
+  @page {
+    margin: 6mm 5mm;
+    size: 80mm auto;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .receipt-printable,
+  .receipt-printable * {
+    visibility: visible;
+  }
+
+  .receipt-printable {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    background: white;
+  }
+}

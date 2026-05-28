@@ -23,9 +23,11 @@ import {
   Ticket,
   TrendingUp,
   ChevronDown,
+  Check,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAdminBranch } from "@/providers/AdminBranchContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
@@ -100,7 +102,8 @@ const NAV_GROUPS: NavGroup[] = [
 export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { mutate: logout } = useLogout();
-  const [role, setRole] = useState<string | null>(null);
+  const { role, branches, selectedBranchId, setSelectedBranchId } = useAdminBranch();
+  const canSwitchBranch = role === "admin" && branches && branches.length > 1;
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -113,10 +116,6 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(NAV_GROUPS.map((g) => [g.title, false]))
   );
-
-  useEffect(() => {
-    setRole(localStorage.getItem("user_role"));
-  }, []);
 
   // Auto-expand the group that contains the active route
   useEffect(() => {
@@ -227,6 +226,28 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
 
         {/* User footer */}
         <div className="border-t border-stone-200 dark:border-slate-800/50 p-3 flex-shrink-0 space-y-0.5">
+          {/* Branch selector — mobile only (hidden on md+, where TopBar shows it) */}
+          {canSwitchBranch && (
+            <div className="md:hidden pb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-slate-600 px-3 pb-1">
+                Sucursal
+              </p>
+              {branches!.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => { setSelectedBranchId(b.id); onClose(); }}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800/50 transition-colors"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-stone-400 dark:text-slate-600" />
+                    <span className="truncate">{b.name}</span>
+                  </span>
+                  {b.id === selectedBranchId && <Check className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
+                </button>
+              ))}
+            </div>
+          )}
+
           {role && (
             <div className="flex items-center gap-2 px-3 py-2">
               <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${ROLE_COLORS[role] ?? "text-stone-400 dark:text-slate-400"}`} />

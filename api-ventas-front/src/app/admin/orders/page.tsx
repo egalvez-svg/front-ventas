@@ -4,7 +4,7 @@ import { Authenticated } from "@refinedev/core";
 import { useState, useMemo } from "react";
 import { useAdminBranch } from "@/providers/AdminBranchContext";
 import Link from "next/link";
-import { ClipboardList, ArrowLeft, Loader2, X, ChevronRight, Search } from "lucide-react";
+import { ClipboardList, ArrowLeft, Loader2, X, Search, Eye } from "lucide-react";
 import {
   useOrders,
   useUpdateOrderStatus,
@@ -133,7 +133,7 @@ function OrdersContent() {
             ))}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl overflow-x-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
@@ -149,7 +149,7 @@ function OrdersContent() {
                 <p>{search ? "Sin resultados" : `No hay pedidos${tab !== "all" ? ` con estado "${STATUS_CONFIG[tab as OrderStatus]?.label}"` : ""}`}</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="border-b border-stone-200 dark:border-slate-800 text-stone-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                     <th className="text-left px-6 py-4 font-medium">#</th>
@@ -158,7 +158,7 @@ function OrdersContent() {
                     <th className="text-left px-6 py-4 font-medium">Estado</th>
                     <th className="text-left px-6 py-4 font-medium">Items</th>
                     <th className="text-left px-6 py-4 font-medium">Hora</th>
-                    <th className="px-6 py-4 font-medium w-10" />
+                    <th className="px-3 py-4 font-medium w-20" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-slate-800/50">
@@ -191,8 +191,14 @@ function OrdersContent() {
                             minute: "2-digit",
                           })}
                         </td>
-                        <td className="px-6 py-4">
-                          <ChevronRight className="w-4 h-4 text-stone-300 dark:text-slate-600" />
+                        <td className="px-3 py-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelected(order); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold transition-colors border border-amber-500/20 whitespace-nowrap"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver
+                          </button>
                         </td>
                       </tr>
                     );

@@ -255,7 +255,7 @@ function ShiftOrdersPanel({ branchId, onSelect }: { branchId: number; onSelect: 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
       </div>
     );
   }
@@ -272,20 +272,40 @@ function ShiftOrdersPanel({ branchId, onSelect }: { branchId: number; onSelect: 
   return (
     <div className="space-y-5">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Mobile: lista */}
+      <div className="sm:hidden bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl p-4 space-y-2.5">
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-stone-400 dark:text-slate-500">Pedidos</span>
+          <span className="text-sm font-bold text-stone-900 dark:text-white">
+            {orders.length}
+            <span className="ml-1.5 text-stone-400 dark:text-slate-500 font-normal text-xs">({paidCount} cobrado{paidCount !== 1 ? "s" : ""})</span>
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-amber-600 dark:text-amber-500 font-semibold">Cobrado</span>
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${totalCobrado.toLocaleString("es-CL")}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-stone-400 dark:text-slate-500">Pendiente</span>
+          <span className="text-sm font-bold text-stone-900 dark:text-white">${totalActivo.toLocaleString("es-CL")}</span>
+        </div>
+      </div>
+
+      {/* Desktop: grid */}
+      <div className="hidden sm:grid grid-cols-3 gap-3">
         <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Pedidos</p>
           <p className="text-2xl font-black text-stone-900 dark:text-white mt-1">{orders.length}</p>
           <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">{paidCount} cobrado{paidCount !== 1 ? "s" : ""}</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500">Cobrado</p>
-          <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
+        <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">Cobrado</p>
+          <p className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">
             ${totalCobrado.toLocaleString("es-CL")}
           </p>
           <div className="flex items-center gap-1 mt-0.5">
-            <TrendingUp className="w-3 h-3 text-emerald-500" />
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-500">en el turno</span>
+            <TrendingUp className="w-3 h-3 text-amber-500" />
+            <span className="text-[11px] text-amber-600 dark:text-amber-500">en el turno</span>
           </div>
         </div>
         <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl p-4">
@@ -660,7 +680,7 @@ function CheckoutModal({
         <button
           onClick={handlePay}
           disabled={updateStatus.isPending}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
+          className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25"
         >
           {updateStatus.isPending
             ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -717,10 +737,10 @@ function ReceiptModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 print:p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm print:hidden" />
 
-      <div className="relative w-full max-w-xs bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden print:rounded-none print:shadow-none print:max-w-none">
+      <div className="relative w-full max-w-xs bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Toolbar — hidden on print */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2 print:hidden">
@@ -740,7 +760,7 @@ function ReceiptModal({
         </div>
 
         {/* Receipt body */}
-        <div className="px-6 py-4 font-mono text-[12px] leading-relaxed">
+        <div className="receipt-printable px-6 py-4 font-mono text-[12px] leading-relaxed">
           <div className="text-center mb-3">
             <p className="font-black text-sm tracking-widest uppercase">Boleta Electrónica</p>
             <p className="text-slate-500 text-[11px] mt-0.5">{dateStr}</p>
@@ -874,10 +894,26 @@ function ShiftOrderDetailModal({
   onClose: () => void;
   onCheckout: (order: Order) => void;
 }) {
+  const [showReceipt, setShowReceipt] = useState(false);
   const { data: invoice, isLoading } = useOrderInvoice(branchId, order.id);
   const style = ORDER_STATUS_STYLE[order.status] ?? ORDER_STATUS_STYLE.pending;
   const isPayable = order.status === "served" || order.status === "delivered";
+  const isPaid = order.status === "paid";
   const isDirect = order.table_id == null;
+
+  if (showReceipt && invoice) {
+    return (
+      <ReceiptModal
+        order={order}
+        invoice={invoice}
+        tipAmount={invoice.tip ?? 0}
+        grandTotal={invoice.total}
+        discountAmount={invoice.discount ?? 0}
+        couponCode={invoice.coupon_code ?? null}
+        onClose={() => setShowReceipt(false)}
+      />
+    );
+  }
 
   const dateStr = new Date(order.created_at).toLocaleString("es-CL", {
     day: "2-digit", month: "2-digit", year: "numeric",
@@ -977,10 +1013,19 @@ function ShiftOrderDetailModal({
         {isPayable && (
           <button
             onClick={() => onCheckout(order)}
-            className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg shadow-amber-500/25"
           >
             <CheckCircle2 className="w-4 h-4" />
             Cobrar este pedido
+          </button>
+        )}
+        {isPaid && invoice && (
+          <button
+            onClick={() => setShowReceipt(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-800 font-bold text-sm transition-all active:scale-[0.98]"
+          >
+            <Printer className="w-4 h-4" />
+            Ver boleta
           </button>
         )}
       </div>

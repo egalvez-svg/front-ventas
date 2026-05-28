@@ -150,7 +150,7 @@ export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: P
         <button
           onClick={handlePay}
           disabled={payTable.isPending || isLoading || !!isError}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-violet-500/20 flex-shrink-0"
+          className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25 flex-shrink-0"
         >
           {payTable.isPending
             ? <Loader2 className="w-4 h-4 animate-spin" />
