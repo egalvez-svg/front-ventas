@@ -247,6 +247,43 @@ export interface TopProduct {
   frequently_bought_with: FrequentlyBoughtWith[];
 }
 
+export interface PaymentMethodPoint {
+  method: "cash" | "card" | "transfer";
+  label: string;
+  total: number;
+  count: number;
+  percentage: number;
+}
+
+interface AdminPaymentMethodsRaw {
+  global_methods: PaymentMethodPoint[];
+  by_branch: unknown[];
+}
+
+export function usePaymentMethodsReport(
+  role: string | null,
+  branchId: number | null,
+  days = 30
+) {
+  const isAdmin = role === "admin";
+  return useQuery<PaymentMethodPoint[]>({
+    queryKey: ["reports", "payment-methods", role, branchId, days],
+    queryFn: async () => {
+      if (isAdmin) {
+        const { data } = await apiClient.get<AdminPaymentMethodsRaw>(
+          `/reports/payment-methods?days=${days}`
+        );
+        return data.global_methods;
+      }
+      const { data } = await apiClient.get<PaymentMethodPoint[]>(
+        `/branches/${branchId}/reports/payment-methods?days=${days}`
+      );
+      return data;
+    },
+    enabled: role !== null && (isAdmin || branchId !== null),
+  });
+}
+
 export function useTopProductsReport(
   branchId: number | null,
   days = 30,
