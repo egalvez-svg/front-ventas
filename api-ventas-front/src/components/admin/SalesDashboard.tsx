@@ -20,7 +20,9 @@ import {
   useAveragesReport,
   useWeekdayReport,
   useMonthlyTrendReport,
+  usePaymentMethodsReport,
   type WeekdayPoint,
+  type PaymentMethodPoint,
 } from "@/hooks/useReports";
 import { useAdminBranch } from "@/providers/AdminBranchContext";
 
@@ -324,6 +326,127 @@ function WeekdayDonutChart({
   );
 }
 
+const PAYMENT_COLORS: Record<string, string> = {
+  cash: "#4ade80",
+  card: "#f97316",
+  transfer: "#60a5fa",
+};
+
+const PAYMENT_DAYS_OPTIONS = [7, 30, 90] as const;
+
+interface PaymentTooltipProps {
+  active?: boolean;
+  payload?: { name: string; value: number; payload: PaymentMethodPoint }[];
+}
+
+function PaymentTooltip({ active, payload }: PaymentTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const entry = payload[0];
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm shadow-xl">
+      <p className="text-stone-700 dark:text-slate-300 font-medium mb-1">{entry.name}</p>
+      <p className="text-stone-900 dark:text-slate-200 font-semibold">{clpFull(entry.value)}</p>
+      <p className="text-stone-400 dark:text-slate-500 text-xs mt-0.5">
+        {entry.payload.percentage.toFixed(1)}% · {entry.payload.count} transacciones
+      </p>
+    </div>
+  );
+}
+
+function PaymentMethodsChart({
+  role,
+  branchId,
+}: {
+  role: string | null;
+  branchId: number | null;
+}) {
+  const [days, setDays] = useState<(typeof PAYMENT_DAYS_OPTIONS)[number]>(30);
+  const { data, isLoading } = usePaymentMethodsReport(role, branchId, days);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl p-6 min-h-[360px] animate-pulse" />
+    );
+  }
+
+  const filtered = (data ?? []).filter((d) => d.total > 0);
+  const hasData = filtered.length > 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-xs font-semibold text-stone-400 dark:text-slate-500 uppercase tracking-widest">
+          Métodos de pago
+        </h3>
+        <select
+          value={days}
+          onChange={(e) => setDays(Number(e.target.value) as (typeof PAYMENT_DAYS_OPTIONS)[number])}
+          className="text-xs bg-transparent border border-stone-200 dark:border-slate-700 rounded-lg px-2 py-1 text-stone-500 dark:text-slate-400 focus:outline-none cursor-pointer"
+        >
+          {PAYMENT_DAYS_OPTIONS.map((d) => (
+            <option key={d} value={d}>
+              {d === 7 ? "7 días" : d === 30 ? "30 días" : "90 días"}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center gap-5">
+        {hasData ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={filtered}
+                dataKey="total"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                innerRadius={56}
+                outerRadius={88}
+                paddingAngle={4}
+              >
+                {filtered.map((entry) => (
+                  <Cell
+                    key={entry.method}
+                    fill={PAYMENT_COLORS[entry.method] ?? "#a8a29e"}
+                    stroke="transparent"
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<PaymentTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center" style={{ height: 200 }}>
+            <div className="w-[176px] h-[176px] rounded-full border-[28px] border-stone-200 dark:border-slate-800 flex items-center justify-center">
+              <span className="text-stone-400 dark:text-slate-600 text-xs text-center leading-tight px-2">
+                Sin ventas<br />registradas
+              </span>
+            </div>
+          </div>
+        )}
+        {hasData && (
+          <div className="w-full space-y-2">
+            {filtered.map((d) => (
+              <div key={d.method} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: PAYMENT_COLORS[d.method] ?? "#a8a29e" }}
+                  />
+                  <span className="text-stone-500 dark:text-slate-400">{d.label}</span>
+                </div>
+                <span className="text-stone-400 dark:text-slate-500">
+                  {d.percentage.toFixed(1)}% · {d.count} transacc.
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TREND_DAYS = 30;
 
 export function SalesDashboard() {
@@ -399,11 +522,12 @@ export function SalesDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch">
         <div className="lg:col-span-2">
           <MonthlyTrendChart role={effectiveRole} branchId={selectedBranchId} />
         </div>
         <WeekdayDonutChart weekdays={weekdays} loading={loadingWeekday} />
+        <PaymentMethodsChart role={effectiveRole} branchId={selectedBranchId} />
       </div>
     </div>
   );
