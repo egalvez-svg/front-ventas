@@ -167,7 +167,7 @@ function TopProductsContent() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-stone-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-stone-200 dark:border-slate-800 overflow-x-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
@@ -183,7 +183,7 @@ function TopProductsContent() {
             <p className="text-sm">Sin ventas en el período seleccionado</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[520px]">
             <thead>
               <tr className="border-b border-stone-100 dark:border-slate-800">
                 <th className="w-12 px-5 py-3" />

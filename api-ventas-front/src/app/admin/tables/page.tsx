@@ -95,7 +95,7 @@ function TablesContent() {
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 text-sm shadow-md shadow-amber-500/20"
           >
             <Plus className="w-4 h-4" />
-            Nueva Mesa
+            <span className="hidden sm:inline">Nueva Mesa</span>
           </button>
         </div>
       </div>

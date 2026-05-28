@@ -6,11 +6,11 @@ import { useState, useMemo } from "react";
 import { useAdminBranch } from "@/providers/AdminBranchContext";
 import {
   ArrowLeft, Clock, Loader2, PlayCircle, StopCircle,
-  CalendarClock, AlertCircle, Banknote, History, X,
+  CalendarClock, AlertCircle, AlertTriangle, Banknote, History, X,
   ChevronLeft, ChevronRight, TrendingUp, ShoppingBag, Receipt,
 } from "lucide-react";
 import {
-  useCurrentShift, useOpenShift, useCloseShift,
+  useCurrentShift, useCurrentShiftOrders, useOpenShift, useCloseShift,
   useShifts, useShiftOrders,
   type Shift,
 } from "@/hooks/useShifts";
@@ -112,12 +112,27 @@ function ShiftsContent() {
 
 function CurrentShiftPanel({ branchId, isManager }: { branchId: number | null; isManager: boolean }) {
   const { data: shift, isLoading, isError } = useCurrentShift(branchId);
+  const { data: currentOrders } = useCurrentShiftOrders(shift?.is_active ? branchId : null);
   const openShift = useOpenShift();
   const closeShift = useCloseShift();
 
   const [initialCash, setInitialCash] = useState("");
   const [actualCash, setActualCash] = useState("");
   const [showCloseForm, setShowCloseForm] = useState(false);
+  const [confirmedPending, setConfirmedPending] = useState(false);
+
+  const shiftStats = useMemo(() => {
+    if (!currentOrders) return { total: 0, paid: 0, cancelled: 0, totalCobrado: 0, totalPendiente: 0, pendingOrders: [] as Order[] };
+    let cobrado = 0, pendiente = 0, paid = 0, cancelled = 0;
+    const pendingOrders: Order[] = [];
+    for (const o of currentOrders) {
+      if (o.status === "paid") { cobrado += o.total ?? 0; paid++; }
+      else if (o.status !== "cancelled") pendiente += o.total ?? 0;
+      if (o.status === "cancelled") cancelled++;
+      if (o.status === "served" || o.status === "delivered") pendingOrders.push(o);
+    }
+    return { total: currentOrders.length, paid, cancelled, totalCobrado: cobrado, totalPendiente: pendiente, pendingOrders };
+  }, [currentOrders]);
 
   function formatDate(iso: string) {
     return new Date(iso).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
@@ -145,12 +160,12 @@ function CurrentShiftPanel({ branchId, isManager }: { branchId: number | null; i
     if (!branchId) return;
     const cash = parseFloat(actualCash);
     if (isNaN(cash) || cash < 0) return;
-    closeShift.mutate({ branchId, actual_cash: cash }, { onSuccess: () => { setActualCash(""); setShowCloseForm(false); } });
+    closeShift.mutate({ branchId, actual_cash: cash }, { onSuccess: () => { setActualCash(""); setShowCloseForm(false); setConfirmedPending(false); } });
   };
 
   const difference =
     shift?.initial_cash != null && actualCash !== ""
-      ? parseFloat(actualCash) - shift.initial_cash
+      ? parseFloat(actualCash) - (shift.initial_cash + shiftStats.totalCobrado)
       : null;
 
   if (isLoading) {
@@ -205,6 +220,51 @@ function CurrentShiftPanel({ branchId, isManager }: { branchId: number | null; i
             </div>
           </div>
 
+          {currentOrders && (
+            <div className="pt-1 border-t border-stone-100 dark:border-slate-800">
+              {/* Mobile: lista */}
+              <div className="sm:hidden space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-stone-400 dark:text-slate-500">Pedidos</span>
+                  <span className="text-sm font-bold text-stone-900 dark:text-white">
+                    {shiftStats.total}
+                    <span className="ml-1.5 text-stone-400 dark:text-slate-500 font-normal text-xs">({shiftStats.paid} cobrados)</span>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-stone-400 dark:text-slate-500">Cobrado</span>
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{formatCurrency(shiftStats.totalCobrado)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-stone-400 dark:text-slate-500">Pendiente</span>
+                  <span className="text-sm font-bold text-stone-900 dark:text-white">{formatCurrency(shiftStats.totalPendiente)}</span>
+                </div>
+              </div>
+
+              {/* Desktop: grid */}
+              <div className="hidden sm:grid grid-cols-3 gap-3 mt-1">
+                <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
+                  <p className="text-xl font-black text-stone-900 dark:text-white">{shiftStats.total}</p>
+                  <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">pedidos</p>
+                  <p className="text-[11px] text-stone-500 dark:text-slate-400">{shiftStats.paid} cobrados</p>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/30 rounded-xl p-3 text-center">
+                  <p className="text-xl font-black text-amber-700 dark:text-amber-400">{formatCurrency(shiftStats.totalCobrado)}</p>
+                  <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">cobrado</p>
+                  <div className="flex items-center justify-center gap-1 mt-0.5">
+                    <TrendingUp className="w-3 h-3 text-amber-500" />
+                    <span className="text-[11px] text-amber-600 dark:text-amber-500">en el turno</span>
+                  </div>
+                </div>
+                <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
+                  <p className="text-xl font-black text-stone-900 dark:text-white">{formatCurrency(shiftStats.totalPendiente)}</p>
+                  <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">pendiente</p>
+                  <p className="text-[11px] text-stone-400 dark:text-slate-500">sin cobrar</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isManager && (
             <div className="pt-1 border-t border-stone-100 dark:border-slate-800">
               {!showCloseForm ? (
@@ -217,25 +277,110 @@ function CurrentShiftPanel({ branchId, isManager }: { branchId: number | null; i
                 </button>
               ) : (
                 <div className="mt-4 space-y-4">
+                  {shiftStats.pendingOrders.length > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-sm font-semibold">
+                          {shiftStats.pendingOrders.length} pedido{shiftStats.pendingOrders.length !== 1 ? "s" : ""} sin cobrar
+                        </span>
+                      </div>
+                      <ul className="space-y-1">
+                        {shiftStats.pendingOrders.map((o) => (
+                          <li key={o.id} className="flex justify-between text-xs text-amber-700 dark:text-amber-300">
+                            <span>
+                              {o.table_id ? `Mesa ${o.table_number ?? o.table_id}` : "Llevar"} — #{o.id}
+                            </span>
+                            <span className="font-semibold">
+                              {o.total != null ? `$${o.total.toLocaleString("es-CL")}` : "—"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <label className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={confirmedPending}
+                          onChange={(e) => setConfirmedPending(e.target.checked)}
+                          className="mt-0.5 accent-amber-500 w-3.5 h-3.5 flex-shrink-0"
+                        />
+                        <span className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                          Entiendo que hay pedidos sin cobrar y quiero cerrar el turno de todas formas
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="bg-stone-50 dark:bg-slate-800/50 border border-stone-200 dark:border-slate-700 rounded-xl p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500 mb-3">Resumen del turno</p>
+                    {/* Mobile: lista */}
+                    <div className="sm:hidden space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-stone-400 dark:text-slate-500">Pedidos</span>
+                        <span className="text-sm font-bold text-stone-900 dark:text-white">
+                          {shiftStats.total}
+                          <span className="ml-1.5 text-emerald-600 dark:text-emerald-400 font-normal text-xs">({shiftStats.paid} pagados)</span>
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-stone-400 dark:text-slate-500">Cobrado</span>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(shiftStats.totalCobrado)}</span>
+                      </div>
+                      {shiftStats.cancelled > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-stone-400 dark:text-slate-500">Cancelados</span>
+                          <span className="text-sm font-bold text-rose-500 dark:text-rose-400">{shiftStats.cancelled}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2.5 border-t border-stone-200 dark:border-slate-700">
+                        <span className="text-xs text-stone-400 dark:text-slate-500">Esperado en caja</span>
+                        <span className="text-sm font-bold text-stone-900 dark:text-white">{formatCurrency(shift.initial_cash + shiftStats.totalCobrado)}</span>
+                      </div>
+                    </div>
+
+                    {/* Desktop: grid */}
+                    <div className="hidden sm:grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-xl font-black text-stone-900 dark:text-white">{shiftStats.total}</p>
+                        <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">pedidos</p>
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400">{shiftStats.paid} pagados</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(shiftStats.totalCobrado)}</p>
+                        <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">cobrado</p>
+                        <p className="text-[11px] text-stone-400 dark:text-slate-500">{shiftStats.cancelled} cancelados</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-black text-stone-900 dark:text-white">{formatCurrency(shift.initial_cash + shiftStats.totalCobrado)}</p>
+                        <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">esperado en caja</p>
+                        <p className="text-[11px] text-stone-400 dark:text-slate-500">fondo + cobrado</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <CurrencyInput label="Efectivo en caja al cierre (arqueo)" value={actualCash} onChange={setActualCash} />
 
                   {difference !== null && (
-                    <div className={`text-sm px-4 py-2.5 rounded-xl border ${difference >= 0 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300" : "bg-rose-500/10 border-rose-500/30 text-rose-500 dark:text-rose-300"}`}>
-                      Diferencia: <span className="font-semibold">{difference >= 0 ? "+" : ""}{formatCurrency(difference)}</span>
+                    <div className={`text-sm px-4 py-2.5 rounded-xl border ${difference === 0 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300" : difference > 0 ? "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-300" : "bg-rose-500/10 border-rose-500/30 text-rose-500 dark:text-rose-300"}`}>
+                      <span className="font-medium">Diferencia vs esperado: </span>
+                      <span className="font-semibold">{difference >= 0 ? "+" : ""}{formatCurrency(difference)}</span>
+                      {difference === 0 && <span className="ml-2 text-xs opacity-75">Cuadra perfectamente</span>}
+                      {difference > 0 && <span className="ml-2 text-xs opacity-75">Sobrante</span>}
+                      {difference < 0 && <span className="ml-2 text-xs opacity-75">Faltante</span>}
                     </div>
                   )}
 
                   <div className="flex gap-3">
                     <button
                       onClick={handleClose}
-                      disabled={closeShift.isPending || actualCash === ""}
+                      disabled={closeShift.isPending || actualCash === "" || (shiftStats.pendingOrders.length > 0 && !confirmedPending)}
                       className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
                     >
                       {closeShift.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <StopCircle className="w-4 h-4" />}
                       Confirmar cierre
                     </button>
                     <button
-                      onClick={() => { setShowCloseForm(false); setActualCash(""); }}
+                      onClick={() => { setShowCloseForm(false); setActualCash(""); setConfirmedPending(false); }}
                       className="px-4 py-2 bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-200 rounded-xl text-sm font-medium transition-colors"
                     >
                       Cancelar
@@ -327,22 +472,26 @@ function ShiftHistoryPanel({ branchId }: { branchId: number }) {
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+      <div className="overflow-x-auto rounded-2xl border border-stone-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-900 min-w-[700px]">
         {/* Table header */}
-        <div className="grid grid-cols-[3rem_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-stone-100 dark:border-slate-800 text-[11px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">
+        <div className="grid grid-cols-[3rem_1fr_1fr_1fr_1fr_1fr_6rem] gap-4 px-5 py-3 border-b border-stone-100 dark:border-slate-800 text-[11px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">
           <span>#</span>
           <span>Apertura</span>
           <span>Cierre</span>
           <span>Fondo inicial</span>
           <span>Arqueo</span>
+          <span>Diferencia</span>
           <span />
         </div>
 
         {/* Rows */}
-        {shifts.map((shift, i) => (
+        {shifts.map((shift, i) => {
+          const diff = shift.actual_cash != null ? shift.actual_cash - shift.initial_cash : null;
+          return (
           <div
             key={shift.id}
-            className={`grid grid-cols-[3rem_1fr_1fr_1fr_1fr_auto] gap-4 items-center px-5 py-3.5 text-sm ${
+            className={`grid grid-cols-[3rem_1fr_1fr_1fr_1fr_1fr_6rem] gap-4 items-center px-5 py-3.5 text-sm ${
               i !== shifts.length - 1 ? "border-b border-stone-100 dark:border-slate-800" : ""
             } hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors`}
           >
@@ -375,15 +524,29 @@ function ShiftHistoryPanel({ branchId }: { branchId: number }) {
               {shift.actual_cash != null ? formatCurrency(shift.actual_cash) : "—"}
             </span>
 
+            <span className={
+              diff == null
+                ? "text-stone-300 dark:text-slate-600"
+                : diff > 0
+                  ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+                  : diff < 0
+                    ? "text-rose-500 dark:text-rose-400 font-semibold"
+                    : "text-stone-400 dark:text-slate-500"
+            }>
+              {diff == null ? "—" : diff === 0 ? "Cuadra" : `${diff > 0 ? "+" : ""}${formatCurrency(diff)}`}
+            </span>
+
             <button
               onClick={() => setSelectedShift(shift)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold transition-colors border border-amber-500/20"
+              className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold transition-colors border border-amber-500/20"
             >
               <Receipt className="w-3.5 h-3.5" />
               Ver pedidos
             </button>
           </div>
-        ))}
+          );
+        })}
+        </div>
       </div>
 
       {/* Pagination */}
@@ -466,40 +629,40 @@ function ShiftOrdersModal({
       <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-stone-100 dark:border-slate-800 flex-shrink-0">
+        <div className="flex items-start justify-between px-4 sm:px-6 pt-6 pb-4 border-b border-stone-100 dark:border-slate-800 flex-shrink-0">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Turno</p>
             <h2 className="text-xl font-bold text-stone-900 dark:text-white mt-0.5">#{shift.id}</h2>
-            <p className="text-sm text-stone-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-stone-500 dark:text-slate-400 mt-1 leading-relaxed">
               {formatDate(shift.opened_at)}
-              {shift.closed_at && <> → {formatDate(shift.closed_at)}</>}
+              {shift.closed_at && <><br className="sm:hidden" /><span className="hidden sm:inline"> → </span>{formatDate(shift.closed_at)}</>}
             </p>
           </div>
-          <button onClick={onClose} className="text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 transition-colors mt-1">
+          <button onClick={onClose} className="text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 transition-colors mt-1 ml-3 flex-shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 px-6 py-4 border-b border-stone-100 dark:border-slate-800 flex-shrink-0">
-          <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 px-4 sm:px-6 py-4 border-b border-stone-100 dark:border-slate-800 flex-shrink-0">
+          <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-2.5 sm:p-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Pedidos</p>
-            <p className="text-2xl font-black text-stone-900 dark:text-white mt-1">{totalPedidos}</p>
+            <p className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white mt-1">{totalPedidos}</p>
             <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">{cancelledCount} cancelado{cancelledCount !== 1 ? "s" : ""}</p>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-3">
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-2.5 sm:p-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500">Cobrado</p>
-            <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
+            <p className="text-lg sm:text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1 break-all">
               ${totalCobrado.toLocaleString("es-CL")}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
-              <TrendingUp className="w-3 h-3 text-emerald-500" />
+              <TrendingUp className="w-3 h-3 text-emerald-500 flex-shrink-0" />
               <span className="text-[11px] text-emerald-600 dark:text-emerald-500">{paidCount} pagado{paidCount !== 1 ? "s" : ""}</span>
             </div>
           </div>
-          <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-3">
+          <div className="bg-stone-50 dark:bg-slate-800/50 rounded-xl p-2.5 sm:p-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Caja</p>
-            <p className="text-lg font-black text-stone-700 dark:text-slate-300 mt-1">
+            <p className="text-base sm:text-lg font-black text-stone-700 dark:text-slate-300 mt-1 break-all">
               ${shift.initial_cash.toLocaleString("es-CL")}
             </p>
             <p className="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">
@@ -531,11 +694,11 @@ function ShiftOrdersModal({
               return (
                 <div
                   key={order.id}
-                  className={`flex items-center gap-4 px-6 py-3 ${
+                  className={`flex items-center gap-2 sm:gap-4 px-4 sm:px-6 py-3 ${
                     i !== sorted.length - 1 ? "border-b border-stone-100 dark:border-slate-800" : ""
                   }`}
                 >
-                  <span className="text-sm font-black text-stone-400 dark:text-slate-500 w-10 flex-shrink-0">
+                  <span className="text-sm font-black text-stone-400 dark:text-slate-500 w-8 sm:w-10 flex-shrink-0">
                     #{order.id}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -545,7 +708,7 @@ function ShiftOrdersModal({
                         Llevar
                       </div>
                     ) : (
-                      <p className="text-sm text-stone-600 dark:text-slate-300">
+                      <p className="text-sm text-stone-600 dark:text-slate-300 truncate">
                         Mesa {order.table_number ?? order.table_id}
                       </p>
                     )}
@@ -553,10 +716,10 @@ function ShiftOrdersModal({
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${style.cls}`}>
                     {style.label}
                   </span>
-                  <span className="text-sm font-bold text-stone-900 dark:text-white flex-shrink-0 w-24 text-right">
+                  <span className="text-sm font-bold text-stone-900 dark:text-white flex-shrink-0 w-20 sm:w-24 text-right">
                     {order.total != null ? `$${order.total.toLocaleString("es-CL")}` : "—"}
                   </span>
-                  <span className="text-[11px] text-stone-400 dark:text-slate-500 flex-shrink-0 w-11 text-right">
+                  <span className="text-[11px] text-stone-400 dark:text-slate-500 flex-shrink-0 text-right whitespace-nowrap">
                     {time}
                   </span>
                 </div>
