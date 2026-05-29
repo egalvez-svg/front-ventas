@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, CheckCircle2, Users, AlertCircle } from "lucide-react";
+import { X, Loader2, CheckCircle2, Users, AlertCircle, Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
 import {
   useTableInvoice,
   usePayTable,
   type TableInvoice,
+  type PaymentMethod,
+  type PaymentEntry,
 } from "@/hooks/useOrders";
 import { useReleaseTable } from "@/hooks/useTables";
 
@@ -14,6 +16,12 @@ const TIP_OPTIONS = [
   { label: "10%", value: 10 },
   { label: "15%", value: 15 },
   { label: "20%", value: 20 },
+];
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "cash",     label: "Efectivo",     Icon: Banknote },
+  { value: "card",     label: "Tarjeta",       Icon: CreditCard },
+  { value: "transfer", label: "Transferencia", Icon: ArrowLeftRight },
 ];
 
 interface Props {
@@ -26,6 +34,7 @@ interface Props {
 export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: Props) {
   const [tipPercent, setTipPercent] = useState(10);
   const [paidTotal, setPaidTotal] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   const { data: invoice, isLoading, isError } = useTableInvoice(branchId, tableId);
   const payTable = usePayTable();
@@ -37,8 +46,9 @@ export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: P
   const tableLabel = tableNumber ?? tableId;
 
   const handlePay = () => {
+    const payments: PaymentEntry[] = [{ method: paymentMethod, amount: grandTotal }];
     payTable.mutate(
-      { branchId, tableId, tip: tipAmount || undefined },
+      { branchId, tableId, payments, tip: tipAmount || undefined },
       {
         onSuccess: () => {
           releaseTable.mutate({ branchId, tableId });
@@ -112,8 +122,29 @@ export function TablePaymentModal({ branchId, tableId, tableNumber, onClose }: P
           ) : null}
         </div>
 
+        {/* Payment method */}
+        <div className="mt-5 space-y-2 flex-shrink-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Método de pago</p>
+          <div className="grid grid-cols-3 gap-2">
+            {PAYMENT_METHODS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                onClick={() => setPaymentMethod(value)}
+                className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                  paymentMethod === value
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                    : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Tip selector */}
-        <div className="mt-5 space-y-2.5 flex-shrink-0">
+        <div className="mt-4 space-y-2.5 flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Propina sugerida</p>
           <div className="grid grid-cols-4 gap-2">
             {TIP_OPTIONS.map((opt) => (

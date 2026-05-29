@@ -9,6 +9,21 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ACTIVE_STATUSES: OrderStatus[] = ["pending", "cooking", "served", "delivered"];
 
+export type PaymentMethod = "cash" | "card" | "transfer";
+
+export interface PaymentEntry {
+  method: PaymentMethod;
+  amount: number;
+}
+
+export interface Payment {
+  id: number;
+  order_id: number;
+  method: PaymentMethod;
+  amount: number;
+  created_at: string;
+}
+
 export interface OrderExtra {
   ingredient_id: number;
   quantity: number;
@@ -47,6 +62,7 @@ export interface Order {
   items: OrderItem[];
   created_at: string;
   total?: number;
+  payments?: Payment[];
 }
 
 function apiError(err: unknown): string {
@@ -140,6 +156,7 @@ export interface Invoice {
   discount?: number;
   coupon_code?: string;
   items: InvoiceItem[];
+  payments?: Payment[];
 }
 
 export interface TableInvoiceItem {
@@ -186,13 +203,15 @@ export function usePayTable() {
     mutationFn: async ({
       branchId,
       tableId,
+      payments,
       tip,
     }: {
       branchId: number;
       tableId: number;
+      payments: PaymentEntry[];
       tip?: number;
     }) => {
-      const body: Record<string, unknown> = {};
+      const body: Record<string, unknown> = { payments };
       if (tip !== undefined && tip > 0) body.tip = tip;
       const { data } = await apiClient.post(
         `/branches/${branchId}/tables/${tableId}/pay`,
@@ -218,6 +237,39 @@ export function useOrderInvoice(branchId: number | null, orderId: number | null)
       return data;
     },
     enabled: branchId !== null && orderId !== null,
+  });
+}
+
+export function usePayOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      branchId,
+      orderId,
+      payments,
+      tip,
+      coupon_code,
+    }: {
+      branchId: number;
+      orderId: number;
+      payments: PaymentEntry[];
+      tip?: number;
+      coupon_code?: string;
+    }) => {
+      const body: Record<string, unknown> = { payments };
+      if (tip !== undefined && tip > 0) body.tip = tip;
+      if (coupon_code) body.coupon_code = coupon_code;
+      const { data } = await apiClient.post(
+        `/branches/${branchId}/orders/${orderId}/payments`,
+        body
+      );
+      return data as Order;
+    },
+    onSuccess: (_, { branchId }) => {
+      qc.invalidateQueries({ queryKey: qk(branchId) });
+      qc.invalidateQueries({ queryKey: ["tables", branchId] });
+    },
+    onError: (err) => toast.error(apiError(err)),
   });
 }
 

@@ -5,17 +5,19 @@ import { useState, useMemo } from "react";
 import {
   Receipt, Loader2, RefreshCw, X, Store, DollarSign,
   CheckCircle2, Printer, Users, ShoppingBag, Tag, Clock,
-  TrendingUp, User,
+  TrendingUp, User, Banknote, CreditCard, ArrowLeftRight,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import {
   useOrders,
-  useUpdateOrderStatus,
+  usePayOrder,
   useOrderInvoice,
   ACTIVE_STATUSES,
   type Order,
   type Invoice,
   type OrderStatus,
+  type PaymentMethod,
+  type PaymentEntry,
 } from "@/hooks/useOrders";
 import { useCurrentShiftOrders } from "@/hooks/useShifts";
 import { useValidateCoupon, type CouponValidation } from "@/hooks/useCoupons";
@@ -440,6 +442,18 @@ const TIP_OPTIONS = [
   { label: "20%", value: 20 },
 ];
 
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "cash",     label: "Efectivo",      Icon: Banknote },
+  { value: "card",     label: "Tarjeta",        Icon: CreditCard },
+  { value: "transfer", label: "Transferencia",  Icon: ArrowLeftRight },
+];
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash:     "Efectivo",
+  card:     "Tarjeta",
+  transfer: "Transferencia",
+};
+
 function CheckoutModal({
   branchId, order, onClose, siblingCount, onPayTable,
 }: {
@@ -456,13 +470,18 @@ function CheckoutModal({
     grandTotal: number;
     discountAmount: number;
     couponCode: string | null;
+    payments: PaymentEntry[];
   } | null>(null);
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitMethod, setSplitMethod] = useState<PaymentMethod>("card");
+  const [splitAmountStr, setSplitAmountStr] = useState("");
 
   const { data: invoice, isLoading } = useOrderInvoice(branchId, order.id);
-  const updateStatus = useUpdateOrderStatus();
+  const payOrder = usePayOrder();
   const releaseTable = useReleaseTable();
   const validateCoupon = useValidateCoupon();
 
@@ -476,6 +495,10 @@ function CheckoutModal({
   const discountedBase = base - discountAmount;
   const tipAmount = Math.round(discountedBase * tipPercent / 100);
   const grandTotal = discountedBase + tipAmount;
+
+  const splitAmount = splitEnabled ? (parseInt(splitAmountStr.replace(/\D/g, ""), 10) || 0) : 0;
+  const primaryAmount = grandTotal - splitAmount;
+  const splitValid = !splitEnabled || (splitAmount > 0 && primaryAmount > 0);
 
   const handleValidateCoupon = () => {
     const code = couponInput.trim().toUpperCase();
@@ -503,11 +526,18 @@ function CheckoutModal({
   };
 
   const handlePay = () => {
-    updateStatus.mutate(
+    const payments: PaymentEntry[] = splitEnabled
+      ? [
+          { method: paymentMethod, amount: primaryAmount },
+          { method: splitMethod, amount: splitAmount },
+        ]
+      : [{ method: paymentMethod, amount: grandTotal }];
+
+    payOrder.mutate(
       {
         branchId,
         orderId: order.id,
-        status: "paid",
+        payments,
         tip: tipAmount || undefined,
         coupon_code: appliedCoupon?.code,
       },
@@ -522,6 +552,7 @@ function CheckoutModal({
             grandTotal,
             discountAmount,
             couponCode: appliedCoupon?.code ?? null,
+            payments,
           });
         },
       }
@@ -537,6 +568,7 @@ function CheckoutModal({
         grandTotal={receiptData.grandTotal}
         discountAmount={receiptData.discountAmount}
         couponCode={receiptData.couponCode}
+        payments={receiptData.payments}
         onClose={onClose}
       />
     );
@@ -632,6 +664,82 @@ function CheckoutModal({
           )}
         </div>
 
+        {/* Payment method */}
+        <div className="mt-4 space-y-2 flex-shrink-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Método de pago</p>
+          <div className="grid grid-cols-3 gap-2">
+            {PAYMENT_METHODS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                onClick={() => setPaymentMethod(value)}
+                className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                  paymentMethod === value
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                    : "bg-stone-100 dark:bg-slate-800 text-stone-500 dark:text-slate-400 hover:bg-stone-200 dark:hover:bg-slate-700 hover:text-stone-700 dark:hover:text-slate-200"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {!splitEnabled ? (
+            <button
+              onClick={() => setSplitEnabled(true)}
+              className="text-[11px] text-stone-400 dark:text-slate-600 hover:text-stone-600 dark:hover:text-slate-400 transition-colors"
+            >
+              + Dividir en dos pagos
+            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1 flex-1">
+                  {PAYMENT_METHODS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSplitMethod(value)}
+                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                        splitMethod === value
+                          ? "bg-violet-500 text-white"
+                          : "bg-stone-100 dark:bg-slate-800 text-stone-500 dark:text-slate-400 hover:bg-stone-200 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={splitAmountStr}
+                  onChange={(e) => setSplitAmountStr(e.target.value.replace(/\D/g, ""))}
+                  placeholder="$0"
+                  className="w-20 bg-stone-100 dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-600 focus:outline-none focus:border-violet-500 text-right"
+                />
+                <button
+                  onClick={() => { setSplitEnabled(false); setSplitAmountStr(""); }}
+                  className="text-stone-400 dark:text-slate-600 hover:text-red-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {splitAmount > 0 && primaryAmount > 0 && (
+                <p className="text-[11px] text-stone-400 dark:text-slate-500 px-1">
+                  {PAYMENT_METHOD_LABELS[paymentMethod]} ${primaryAmount.toLocaleString("es-CL")}
+                  {" · "}
+                  {PAYMENT_METHOD_LABELS[splitMethod]} ${splitAmount.toLocaleString("es-CL")}
+                </p>
+              )}
+              {splitAmount > 0 && primaryAmount <= 0 && (
+                <p className="text-[11px] text-red-500 dark:text-red-400 px-1">
+                  El monto del segundo pago supera el total
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Tip selector */}
         <div className="mt-4 space-y-2.5 flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">Propina sugerida</p>
@@ -679,10 +787,10 @@ function CheckoutModal({
         {/* Pay button */}
         <button
           onClick={handlePay}
-          disabled={updateStatus.isPending}
+          disabled={payOrder.isPending || !splitValid}
           className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25"
         >
-          {updateStatus.isPending
+          {payOrder.isPending
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <CheckCircle2 className="w-4 h-4" />
           }
@@ -706,7 +814,7 @@ function CheckoutModal({
 type ReceiptItem = { product_name: string; quantity: number; price: number; subtotal: number };
 
 function ReceiptModal({
-  order, invoice, tipAmount, grandTotal, discountAmount, couponCode, onClose,
+  order, invoice, tipAmount, grandTotal, discountAmount, couponCode, payments, onClose,
 }: {
   order: Order;
   invoice: Invoice | null;
@@ -714,6 +822,7 @@ function ReceiptModal({
   grandTotal: number;
   discountAmount: number;
   couponCode: string | null;
+  payments: PaymentEntry[];
   onClose: () => void;
 }) {
   const items: ReceiptItem[] = invoice
@@ -824,7 +933,19 @@ function ReceiptModal({
             </div>
           </div>
 
-          <div className="border-t border-dashed border-slate-300 mt-3 mb-3" />
+          <div className="border-t border-dashed border-slate-300 mt-3 mb-2" />
+
+          {payments.length > 0 && (
+            <div className="space-y-0.5 mb-2">
+              <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Forma de pago</div>
+              {payments.map((p, i) => (
+                <div key={i} className="flex justify-between text-slate-500">
+                  <span>{PAYMENT_METHOD_LABELS[p.method]}</span>
+                  <span>${p.amount.toLocaleString("es-CL")}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <p className="text-center text-slate-400 text-[10px]">¡Gracias por su visita!</p>
         </div>
@@ -910,6 +1031,7 @@ function ShiftOrderDetailModal({
         grandTotal={invoice.total}
         discountAmount={invoice.discount ?? 0}
         couponCode={invoice.coupon_code ?? null}
+        payments={(invoice.payments ?? []).map((p) => ({ method: p.method, amount: p.amount }))}
         onClose={() => setShowReceipt(false)}
       />
     );
